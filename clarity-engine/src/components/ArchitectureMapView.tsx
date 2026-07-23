@@ -62,43 +62,111 @@ export const ArchitectureMapView: React.FC<ArchitectureMapViewProps> = ({
       setIsLoadingCode(true);
       setLiveCode(null);
 
-      // Strip any local temp directory prefix (e.g. /tmp/clarity_repo_abc123/)
+      // Strip any local temp directory prefix
       let cleanPath = activeNodeState.path
-        .replace(/^\/tmp\/clarity_repo_[^/]+\//, '')  // remove /tmp/clarity_repo_xxx/
-        .replace(/^clarity_repo_[^/]+\//, '')          // remove clarity_repo_xxx/
-        .replace(/^\/+/, '');                           // remove leading slashes
+        .replace(/^\/tmp\/clarity_repo_[^/]+\//, '')
+        .replace(/^clarity_repo_[^/]+\//, '')
+        .replace(/^\/+/, '')
+        .replace(/\/$/, ''); // also strip trailing slashes
 
-      const tryFetch = (path: string) =>
+      // Use '.' or '' to mean the repo root
+      if (!cleanPath || cleanPath === '.') cleanPath = '';
+
+      const ghFetch = (path: string) =>
         fetch(`https://api.github.com/repos/${repoFullName}/contents/${path}`)
           .then(res => res.json());
 
+      const formatDirListing = (dirPath: string, items: any[]): string => {
+        const dirs  = items.filter((i: any) => i.type === 'dir').map((i: any)  => `  📁 ${i.name}/`);
+        const files = items.filter((i: any) => i.type === 'file').map((i: any) => `  📄 ${i.name}`);
+        return [
+          `// 📂 Module: ${activeNodeState.name}`,
+          `// Path: ${dirPath || '(repo root)'}`,
+          `//`,
+          `// This node represents a folder. Contents:`,
+          `//`,
+          ...dirs,
+          ...files,
+        ].join('\n');
+      };
+
+      const decodeContent = (content: string): string => {
+        try {
+          return decodeURIComponent(escape(window.atob(content)));
+        } catch {
+          return window.atob(content);
+        }
+      };
+
       const loadCode = async () => {
         try {
-          let data = await tryFetch(cleanPath);
+          // Strategy 1: Try the path exactly as given
+          if (cleanPath) {
+            const data = await ghFetch(cleanPath);
 
-          // If not found and path has no extension, try common extensions
-          if ((data.message === 'Not Found' || !data.content) && !cleanPath.includes('.')) {
-            const exts = ['py', 'ts', 'tsx', 'js', 'jsx', 'go', 'java', 'rs', 'rb', 'cpp', 'c', 'md'];
-            for (const ext of exts) {
-              const attempt = await tryFetch(`${cleanPath}.${ext}`);
-              if (attempt.content) { data = attempt; break; }
+            // It's a directory listing
+            if (Array.isArray(data)) {
+              setLiveCode(formatDirListing(cleanPath, data));
+              return;
             }
-          }
 
-          if (Array.isArray(data)) {
-            const files = data.map((item: any) => `📁 ${item.name}`).join('\n');
-            setLiveCode(`// 📂 ${cleanPath}\n// Directory contents:\n\n${files}`);
-          } else if (data.content) {
-            try {
-              const decoded = decodeURIComponent(escape(window.atob(data.content)));
-              setLiveCode(decoded);
-            } catch(e) {
-              setLiveCode(window.atob(data.content));
+            // It's a file
+            if (data.content) {
+              setLiveCode(decodeContent(data.content));
+              return;
             }
           } else {
-            setLiveCode(`// 🏗️ Architectural Module: ${activeNodeState.name}\n//\n// Path: ${cleanPath}\n// Could not load source — the file may be auto-generated or an abstraction.`);
+            // Repo root
+            const data = await ghFetch('');
+            if (Array.isArray(data)) {
+              setLiveCode(formatDirListing('', data));
+              return;
+            }
           }
-        } catch(err: any) {
+
+          // Strategy 2: Path has no extension → try it as a directory first
+          if (cleanPath && !cleanPath.includes('.')) {
+            // Already tried as path, now try common index files inside it
+            const indexFiles = [
+              `${cleanPath}/index.ts`, `${cleanPath}/index.tsx`, `${cleanPath}/index.js`,
+              `${cleanPath}/index.py`, `${cleanPath}/main.py`, `${cleanPath}/main.ts`,
+              `${cleanPath}/app.py`, `${cleanPath}/app.ts`, `${cleanPath}/mod.rs`,
+            ];
+            for (const idxPath of indexFiles) {
+              const attempt = await ghFetch(idxPath);
+              if (attempt.content) {
+                setLiveCode(`// 📄 ${idxPath}\n\n` + decodeContent(attempt.content));
+                return;
+              }
+            }
+
+            // Strategy 3: Try adding common file extensions to the path itself
+            const exts = ['py', 'ts', 'tsx', 'js', 'jsx', 'go', 'java', 'rs', 'rb', 'cpp', 'c', 'cs', 'md', 'yml', 'yaml', 'json', 'sh'];
+            for (const ext of exts) {
+              const attempt = await ghFetch(`${cleanPath}.${ext}`);
+              if (attempt.content) {
+                setLiveCode(decodeContent(attempt.content));
+                return;
+              }
+            }
+          }
+
+          // Strategy 4: Nothing worked — show a helpful architectural description
+          setLiveCode([
+            `// 🏗️ Architectural Module: ${activeNodeState.name}`,
+            `//`,
+            `// Path: ${cleanPath || '(repo root)'}`,
+            `// Category: ${activeNodeState.description || 'module'}`,
+            `//`,
+            `// This node is a high-level architectural abstraction.`,
+            `// It may represent multiple files/folders or a logical layer`,
+            `// that does not map to a single source file.`,
+            `//`,
+            `// Try clicking on a more specific node in the architecture map`,
+            `// to view source code.`,
+          ].join('\n'));
+
+        } catch (err: any) {
           setLiveCode(`// Error fetching source: ${err.message}`);
         } finally {
           setIsLoadingCode(false);
