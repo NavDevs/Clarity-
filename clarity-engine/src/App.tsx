@@ -4,6 +4,12 @@ import dagre from 'dagre';
 import { ViewMode, ArchitectureNode, SecurityFinding, ChatMessage, RepositoryScan } from './types';
 import { initialScan, initialChatMessages } from './data/initialData';
 
+// Strip /tmp/clarity_repo_xxx/ prefixes from backend paths
+const cleanNodePath = (p: string) => p
+  .replace(/^\/tmp\/clarity_repo_[^/]+\//, '')
+  .replace(/^clarity_repo_[^/]+\//, '')
+  .replace(/^\/+/, '');
+
 import { TopNavBar } from './components/TopNavBar';
 import { SideNavBar } from './components/SideNavBar';
 import { GoogleOAuthProvider } from '@react-oauth/google';
@@ -187,17 +193,17 @@ export default function App() {
       const reactNodes = rawNodes.map((n: any, i: number) => {
         const nodeId = n.id || `node-${i}`;
         const dagreNode = g.node(nodeId);
-        
+        const cleanPath = cleanNodePath(n.filename || '');
         return {
           id: nodeId,
           name: n.label || n.filename || n.id,
-          path: n.filename || '',
+          path: cleanPath,
           type: n.category === 'infra' ? 'database' : (n.category === 'folder' ? 'folder' : 'file'),
           status: 'SAFE',
           description: n.category || 'Module',
-          x: dagreNode ? dagreNode.x - 96 : 0, // x is center, subtract half width
-          y: dagreNode ? dagreNode.y - 60 : 0, // y is center, subtract half height
-          codeSnippet: `// Loaded from ${n.filename}`,
+          x: dagreNode ? dagreNode.x - 96 : 0,
+          y: dagreNode ? dagreNode.y - 60 : 0,
+          codeSnippet: `// ${cleanPath}`,
           dependencies: n.dependencies || []
         };
       });
@@ -429,22 +435,23 @@ export default function App() {
                     rawEdges.forEach((e: any) => g.setEdge(e.source, e.target));
                     dagre.layout(g);
 
-                    const reactNodes = rawNodes.map((n: any, i: number) => {
-                      const nodeId = n.id || `node-${i}`;
-                      const dagreNode = g.node(nodeId);
-                      return {
-                        id: nodeId,
-                        name: n.label || n.filename || n.id,
-                        path: n.filename || '',
-                        type: n.category === 'infra' ? 'database' : 'file',
-                        status: 'SAFE',
-                        description: n.category || 'Module',
-                        x: dagreNode ? dagreNode.x - 96 : 0,
-                        y: dagreNode ? dagreNode.y - 60 : 0,
-                        codeSnippet: `// Loaded from ${n.filename}`,
-                        dependencies: []
-                      };
-                    });
+                      const reactNodes = rawNodes.map((n: any, i: number) => {
+                        const nodeId = n.id || `node-${i}`;
+                        const dagreNode = g.node(nodeId);
+                        const cleanPath = cleanNodePath(n.filename || '');
+                        return {
+                          id: nodeId,
+                          name: n.label || n.filename || n.id,
+                          path: cleanPath,
+                          type: n.category === 'infra' ? 'database' : (n.category === 'folder' ? 'folder' : 'file'),
+                          status: 'SAFE',
+                          description: n.category || 'Module',
+                          x: dagreNode ? dagreNode.x - 96 : 0,
+                          y: dagreNode ? dagreNode.y - 60 : 0,
+                          codeSnippet: `// ${cleanPath}`,
+                          dependencies: n.dependencies || []
+                        };
+                      });
 
                     const reactFindings: any[] = [];
                     data.audit?.secrets?.forEach((s: any, i: number) => reactFindings.push({ id: `sec-${i}`, title: 'Hardcoded Secret', description: `Secret at line ${s.line}.`, severity: 'CRITICAL', path: s.file, fixed: false }));

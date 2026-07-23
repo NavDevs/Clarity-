@@ -1,3 +1,14 @@
+import re
+
+def _sanitize_nodes(nodes: list) -> list:
+    """Strip any accidental absolute /tmp/ paths from node filenames."""
+    for node in nodes:
+        if "filename" in node and node["filename"]:
+            node["filename"] = re.sub(r"^/tmp/clarity_repo_[^/]+/", "", str(node["filename"]))
+            node["filename"] = re.sub(r"^clarity_repo_[^/]+/", "", node["filename"])
+            node["filename"] = node["filename"].lstrip("/")
+    return nodes
+
 import os
 import json
 from typing import Dict, Any
@@ -10,7 +21,7 @@ def generate_diagram_data(stack_data: dict, structure_data: dict) -> Dict[str, A
     api_key = os.environ.get("GROQ_API_KEY")
     
     fallback_data = {
-        "nodes": [{"id": "node_1", "label": "Application Core", "filename": "Root", "category": "logic"}],
+        "nodes": [{"id": "node_1", "label": "Application Core", "filename": ".", "category": "logic"}],
         "edges": []
     }
     
@@ -40,7 +51,7 @@ def generate_diagram_data(stack_data: dict, structure_data: dict) -> Dict[str, A
         {{
           "id": "unique_string_id",
           "label": "Module Name (e.g., Auth Service)",
-          "filename": "MUST be an EXACT valid file or folder path from the provided Folder/File Structure (e.g. backend/src). If it spans the whole repo, use '.'",
+          "filename": "MUST be a SHORT RELATIVE path from the repo root (e.g. 'src/auth.py', 'backend', 'client/src'). NEVER use absolute paths. If it spans the whole repo, use '.'",
           "category": "One of: logic, database, backend, tools, validation, infra"
         }}
       ],
@@ -68,6 +79,7 @@ def generate_diagram_data(stack_data: dict, structure_data: dict) -> Dict[str, A
         
         # Validate schema loosely
         if "nodes" in parsed_data and "edges" in parsed_data:
+            parsed_data["nodes"] = _sanitize_nodes(parsed_data["nodes"])
             return parsed_data
         else:
             return fallback_data
