@@ -16,7 +16,7 @@ from typing import Dict, Any
 from groq import Groq, RateLimitError, APIStatusError
 
 MODELS = [
-    "llama-3.1-70b-versatile",
+    "llama-3.3-70b-versatile",
     "llama-3.1-8b-instant",
     "mixtral-8x7b-32768",
 ]
@@ -57,7 +57,7 @@ def _call_groq(client: Groq, messages: list, **kwargs) -> str:
                         time.sleep(2 ** attempt)
                         continue
                     break
-                raise
+                break # For 400 (decommissioned), 404, etc., break immediately and try next model
             except Exception as e:
                 last_error = e
                 break
