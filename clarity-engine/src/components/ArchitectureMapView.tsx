@@ -22,6 +22,7 @@ export const ArchitectureMapView: React.FC<ArchitectureMapViewProps> = ({
   const [codeModalOpen, setCodeModalOpen] = useState(false);
   const [liveCode, setLiveCode] = useState<string | null>(null);
   const [isLoadingCode, setIsLoadingCode] = useState(false);
+  const [isContextPanelOpen, setIsContextPanelOpen] = useState(true);
 
   // Resize Panel State
   const [panelWidth, setPanelWidth] = useState(450); // 450px default medium size
@@ -385,9 +386,10 @@ export const ArchitectureMapView: React.FC<ArchitectureMapViewProps> = ({
 
       {/* Right Context Panel (Bottom Sheet on Mobile) */}
       <aside 
-        style={{ '--panel-width': `${panelWidth}px` } as React.CSSProperties}
-        className={`fixed lg:relative bottom-0 left-0 right-0 lg:bottom-auto lg:left-auto lg:right-auto bg-[var(--color-background)] border-t lg:border-t-0 lg:border-l border-[var(--color-border)] flex flex-col z-50 lg:z-20 shrink-0 transition-transform duration-300 ease-in-out transform ${activeNodeState ? 'translate-y-0' : 'translate-y-full'} lg:translate-y-0 h-[65vh] lg:h-full w-full lg:w-[var(--panel-width)] shadow-[0_-10px_40px_rgba(0,0,0,0.4)] lg:shadow-none rounded-t-xl lg:rounded-none`}
+        style={{ '--panel-width': isContextPanelOpen ? `${panelWidth}px` : '0px' } as React.CSSProperties}
+        className={`fixed lg:relative bottom-0 left-0 right-0 lg:bottom-auto lg:left-auto lg:right-auto bg-[var(--color-background)] border-t lg:border-t-0 lg:border-l border-[var(--color-border)] flex flex-col z-50 lg:z-20 shrink-0 transition-all duration-300 ease-in-out transform ${activeNodeState ? 'translate-y-0' : 'translate-y-full'} lg:translate-y-0 h-[65vh] lg:h-full w-full lg:w-[var(--panel-width)] shadow-[0_-10px_40px_rgba(0,0,0,0.4)] lg:shadow-none rounded-t-xl lg:rounded-none ${!isContextPanelOpen ? 'lg:border-l-0 lg:opacity-0 pointer-events-none' : 'lg:opacity-100'}`}
       >
+        <div className="flex flex-col h-full min-w-[300px]">
         {/* Resize Handle (Desktop Only) */}
         <div 
           className="hidden lg:block absolute left-0 top-0 bottom-0 w-2 -ml-1 cursor-col-resize hover:bg-[var(--color-accent)]/50 z-30 transition-colors"
@@ -404,12 +406,21 @@ export const ArchitectureMapView: React.FC<ArchitectureMapViewProps> = ({
           <h2 className="font-display font-semibold text-base lg:text-lg text-[var(--color-foreground)] tracking-wide flex items-center gap-2">
             Context Panel
           </h2>
-          <button 
-            className="lg:hidden p-1.5 rounded-full text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] hover:bg-[var(--color-card)] transition-colors"
-            onClick={() => setActiveNodeState(null)}
-          >
-            <span className="material-symbols-outlined text-[20px]">close</span>
-          </button>
+          <div className="flex items-center gap-2 pointer-events-auto">
+            <button 
+              className="lg:hidden p-1.5 rounded-full text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] hover:bg-[var(--color-card)] transition-colors"
+              onClick={() => setActiveNodeState(null)}
+            >
+              <span className="material-symbols-outlined text-[20px]">close</span>
+            </button>
+            <button 
+              className="hidden lg:block p-1.5 rounded-full text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] hover:bg-[var(--color-card)] transition-colors"
+              onClick={() => setIsContextPanelOpen(false)}
+              title="Close Panel"
+            >
+              <span className="material-symbols-outlined text-[20px]">chevron_right</span>
+            </button>
+          </div>
         </div>
 
         <div className="flex-grow overflow-y-auto p-6 space-y-8 chat-scroll">
@@ -520,7 +531,19 @@ export const ArchitectureMapView: React.FC<ArchitectureMapViewProps> = ({
             </div>
           </section>
         </div>
+        </div>
       </aside>
+
+      {/* Floating Toggle Button (Visible when Desktop Panel is closed) */}
+      {!isContextPanelOpen && (
+        <button
+          onClick={() => setIsContextPanelOpen(true)}
+          className="hidden lg:flex fixed top-1/2 right-0 -translate-y-1/2 bg-[var(--color-card)] border border-[var(--color-border)] border-r-0 p-3 rounded-l-xl z-40 hover:bg-[var(--color-accent)]/20 hover:text-[var(--color-accent)] text-[var(--color-muted-foreground)] transition-colors shadow-lg group"
+          title="Open Context Panel"
+        >
+          <span className="material-symbols-outlined text-[24px] group-hover:-translate-x-1 transition-transform">chevron_left</span>
+        </button>
+      )}
 
       {/* Code Inspection Modal */}
       {codeModalOpen && activeNodeState && (
