@@ -117,7 +117,7 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
   };
 
   return (
-    <div className="flex flex-col relative w-full h-full bg-[var(--color-background)] overflow-y-auto overflow-x-hidden p-8 md:p-16">
+    <div className="flex flex-col relative w-full h-full bg-[var(--color-background)] overflow-y-auto overflow-x-hidden p-4 sm:p-8 md:p-16">
       <div className="absolute top-0 right-0 pointer-events-none opacity-5 select-none z-0">
         <span className="font-display font-bold text-[15rem] leading-none tracking-tighter text-[var(--color-foreground)]">DSH</span>
       </div>
@@ -167,11 +167,11 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
         </div>
         
         {/* Search Centerpiece */}
-        <div className="mb-16">
+        <div className="mb-12 sm:mb-16">
           <label className="block font-mono text-xs font-semibold text-[var(--color-muted-foreground)] uppercase tracking-[0.1em] mb-4">
             Scan a new repository
           </label>
-          <form onSubmit={handleSubmit} className="w-full max-w-3xl relative flex flex-col sm:flex-row gap-4">
+          <form onSubmit={handleSubmit} className="w-full max-w-3xl relative flex flex-col sm:flex-row gap-3 sm:gap-4">
             <input
               type="text"
               value={inputUrl}
@@ -217,14 +217,14 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
               <button onClick={fetchHistory} className="mt-2 font-mono text-xs text-[var(--color-muted-foreground)] underline">Refresh</button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {history.map((scan) => {
                 const isDeleting = deletingIds.includes(scan.id);
                 return (
                 <div 
                   key={scan.id} 
                   onClick={() => !isDeleting && handleLoadScan(scan)}
-                  className={`bg-[var(--color-card)] border border-[var(--color-border)] p-6 hover:border-[var(--color-accent)] cursor-pointer transition-all duration-300 group flex flex-col relative ${isDeleting ? 'opacity-0 scale-95 pointer-events-none' : 'opacity-100 scale-100'}`}
+                  className={`bg-[var(--color-card)] border border-[var(--color-border)] p-4 sm:p-6 hover:border-[var(--color-accent)] cursor-pointer transition-all duration-300 group flex flex-col relative ${isDeleting ? 'opacity-0 scale-95 pointer-events-none' : 'opacity-100 scale-100'}`}
                 >
                   <div className="flex justify-between items-start mb-4">
                     <span className="material-symbols-outlined text-[var(--color-muted-foreground)] group-hover:text-[var(--color-accent)] transition-colors">folder</span>

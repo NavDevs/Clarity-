@@ -78,7 +78,7 @@ export const AiChatView: React.FC<AiChatViewProps> = ({
           </div>
 
           {/* Chat Messages History */}
-          <div className="flex-1 overflow-y-auto chat-scroll p-8 space-y-8 bg-[var(--color-background)]">
+          <div className="flex-1 overflow-y-auto chat-scroll p-4 sm:p-8 space-y-6 sm:space-y-8 bg-[var(--color-background)]">
             <div className="flex justify-center">
               <span className="font-mono font-semibold text-[10px] text-[var(--color-muted-foreground)] uppercase tracking-widest px-4 py-1 border border-[var(--color-border)] bg-[var(--color-muted)]">
                 Today
@@ -88,11 +88,11 @@ export const AiChatView: React.FC<AiChatViewProps> = ({
             {messages.map((msg) => (
               <div
                 key={msg.id}
-                className={`flex w-full mb-8 ${
+                className={`flex w-full mb-6 sm:mb-8 ${
                   msg.sender === 'user' ? 'justify-end' : 'justify-start'
                 }`}
               >
-                <div className={`flex gap-4 max-w-[85%] lg:max-w-[75%] ${msg.sender === 'user' ? 'flex-row-reverse' : ''}`}>
+                <div className={`flex gap-3 sm:gap-4 max-w-[95%] sm:max-w-[85%] lg:max-w-[75%] ${msg.sender === 'user' ? 'flex-row-reverse' : ''}`}>
                    {/* Avatar */}
                    <div className="shrink-0 mt-1">
                      {msg.sender === 'user' ? (
@@ -107,12 +107,12 @@ export const AiChatView: React.FC<AiChatViewProps> = ({
                    </div>
                    
                    {/* Bubble Content */}
-                   <div className={`min-w-0 p-6 lg:p-8 border rounded-none ${
+                   <div className={`min-w-0 p-4 sm:p-6 lg:p-8 border rounded-none ${
                       msg.sender === 'user' 
                         ? 'bg-[var(--color-muted)] border-[var(--color-border)]' 
                         : 'bg-[var(--color-card)] border-[var(--color-border)]'
                     }`}>
-                      <div className={`flex items-center gap-3 mb-6 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
                         <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-muted-foreground)]">
                           {msg.sender === 'user' ? 'You' : 'Clarity AI'}
                         </span>

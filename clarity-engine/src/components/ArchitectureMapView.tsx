@@ -218,7 +218,7 @@ export const ArchitectureMapView: React.FC<ArchitectureMapViewProps> = ({
   const currentCmd = `scan --target ${activeNodeState ? activeNodeState.name : 'models/'}`;
 
   return (
-    <div className="flex-grow flex relative overflow-hidden h-full w-full bg-[var(--color-background)]">
+    <div className="flex-grow flex flex-col lg:flex-row relative overflow-hidden h-full w-full bg-[var(--color-background)]">
       {/* Infinite Canvas */}
       <div 
         onMouseDown={handleMouseDown}
@@ -341,7 +341,7 @@ export const ArchitectureMapView: React.FC<ArchitectureMapViewProps> = ({
         </div>
 
         {/* Canvas Floating Controls */}
-        <div className="absolute bottom-6 left-6 z-20 flex items-center gap-2 bg-[var(--color-card)] border border-[var(--color-border)] p-2 font-mono text-[10px] text-[var(--color-muted-foreground)] uppercase tracking-wider">
+        <div className="absolute bottom-6 left-6 lg:bottom-6 lg:left-6 z-20 flex items-center gap-1 sm:gap-2 bg-[var(--color-card)] border border-[var(--color-border)] p-1 sm:p-2 font-mono text-[10px] text-[var(--color-muted-foreground)] uppercase tracking-wider scale-90 sm:scale-100 origin-bottom-left">
           <button 
             onClick={() => { setPanOffset({ x: 0, y: 0 }); setScale(1); }}
             className="px-3 py-1 hover:text-[var(--color-foreground)] transition-colors flex items-center gap-2"
@@ -369,27 +369,47 @@ export const ArchitectureMapView: React.FC<ArchitectureMapViewProps> = ({
         </div>
 
         {/* Floating Note */}
-        <div className="absolute top-6 left-6 z-20 flex items-center gap-2 bg-[var(--color-card)] border border-[var(--color-border)] p-3 font-mono text-xs text-[var(--color-foreground)] shadow-lg animate-pulse">
-          <span className="material-symbols-outlined text-[16px] text-[var(--color-accent)]">info</span>
+        <div className="absolute top-4 left-4 lg:top-6 lg:left-6 z-20 flex items-center gap-2 bg-[var(--color-card)] border border-[var(--color-border)] p-2 lg:p-3 font-mono text-[10px] lg:text-xs text-[var(--color-foreground)] shadow-lg animate-pulse">
+          <span className="material-symbols-outlined text-[14px] lg:text-[16px] text-[var(--color-accent)]">info</span>
           <span>Tap on a block to see its relations and details</span>
         </div>
       </div>
 
-      {/* Right Context Panel */}
-      <aside 
-        style={{ width: `${panelWidth}px` }}
-        className="relative bg-[var(--color-background)] border-l border-[var(--color-border)] flex flex-col z-20 shrink-0 h-full"
-      >
-        {/* Resize Handle */}
+      {/* Mobile Backdrop */}
+      {activeNodeState && (
         <div 
-          className="absolute left-0 top-0 bottom-0 w-2 -ml-1 cursor-col-resize hover:bg-[var(--color-accent)]/50 z-30 transition-colors"
+          className="lg:hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-40"
+          onClick={() => setActiveNodeState(null)}
+        />
+      )}
+
+      {/* Right Context Panel (Bottom Sheet on Mobile) */}
+      <aside 
+        style={{ '--panel-width': `${panelWidth}px` } as React.CSSProperties}
+        className={`fixed lg:relative bottom-0 left-0 right-0 lg:bottom-auto lg:left-auto lg:right-auto bg-[var(--color-background)] border-t lg:border-t-0 lg:border-l border-[var(--color-border)] flex flex-col z-50 lg:z-20 shrink-0 transition-transform duration-300 ease-in-out transform ${activeNodeState ? 'translate-y-0' : 'translate-y-full'} lg:translate-y-0 h-[65vh] lg:h-full w-full lg:w-[var(--panel-width)] shadow-[0_-10px_40px_rgba(0,0,0,0.4)] lg:shadow-none rounded-t-xl lg:rounded-none`}
+      >
+        {/* Resize Handle (Desktop Only) */}
+        <div 
+          className="hidden lg:block absolute left-0 top-0 bottom-0 w-2 -ml-1 cursor-col-resize hover:bg-[var(--color-accent)]/50 z-30 transition-colors"
           onMouseDown={handleResizeStart}
         />
+        
+        {/* Mobile Drag Handle Indicator */}
+        <div className="lg:hidden w-full flex justify-center pt-3 pb-1" onClick={() => setActiveNodeState(null)}>
+          <div className="w-12 h-1 bg-[var(--color-border)] rounded-full"></div>
+        </div>
+
         {/* Header */}
-        <div className="p-6 border-b border-[var(--color-border)] flex items-center justify-between">
-          <h2 className="font-display font-semibold text-lg text-[var(--color-foreground)] tracking-wide flex items-center gap-2">
+        <div className="p-4 lg:p-6 border-b border-[var(--color-border)] flex items-center justify-between">
+          <h2 className="font-display font-semibold text-base lg:text-lg text-[var(--color-foreground)] tracking-wide flex items-center gap-2">
             Context Panel
           </h2>
+          <button 
+            className="lg:hidden p-1.5 rounded-full text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] hover:bg-[var(--color-card)] transition-colors"
+            onClick={() => setActiveNodeState(null)}
+          >
+            <span className="material-symbols-outlined text-[20px]">close</span>
+          </button>
         </div>
 
         <div className="flex-grow overflow-y-auto p-6 space-y-8 chat-scroll">

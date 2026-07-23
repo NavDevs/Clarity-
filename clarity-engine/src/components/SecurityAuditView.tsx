@@ -37,9 +37,9 @@ export const SecurityAuditView: React.FC<SecurityAuditViewProps> = ({
   const safeCount = findings.filter((f) => f.severity === 'SAFE' || fixedIds[f.id]).length;
 
   return (
-    <div className="flex-1 overflow-y-auto p-8 lg:p-16 relative z-0 text-[var(--color-foreground)] bg-[var(--color-background)]">
+    <div className="flex-1 overflow-y-auto p-4 sm:p-8 lg:p-16 relative z-0 text-[var(--color-foreground)] bg-[var(--color-background)]">
       {/* Header */}
-      <header className="mb-16 border-b border-[var(--color-border)] pb-12 flex flex-col lg:flex-row lg:items-end justify-between gap-8">
+      <header className="mb-12 lg:mb-16 border-b border-[var(--color-border)] pb-8 lg:pb-12 flex flex-col lg:flex-row lg:items-end justify-between gap-6 lg:gap-8">
         <div>
           <div className="flex items-center gap-4 mb-8">
             <span className="w-12 h-0.5 bg-[var(--color-accent)] block" />
@@ -47,8 +47,8 @@ export const SecurityAuditView: React.FC<SecurityAuditViewProps> = ({
               Security Audit
             </span>
           </div>
-          <h1 className="text-5xl lg:text-7xl font-display font-bold text-[var(--color-foreground)] mb-6 tracking-tighter leading-[0.9]">
-            Audit<br />Findings.
+          <h1 className="text-4xl sm:text-5xl lg:text-7xl font-display font-bold text-[var(--color-foreground)] mb-4 lg:mb-6 tracking-tighter leading-[0.9]">
+            Audit<br className="hidden sm:block" /> Findings.
           </h1>
           <p className="text-lg text-[var(--color-muted-foreground)] font-serif max-w-2xl leading-relaxed">
             Review the latest scan results for vulnerabilities, secret exposures, and misconfigurations.
@@ -58,9 +58,9 @@ export const SecurityAuditView: React.FC<SecurityAuditViewProps> = ({
       </header>
 
       {/* Control Bar: Severity Badges & Search */}
-      <div className="flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-8 mb-16">
+      <div className="flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-6 lg:gap-8 mb-12 lg:mb-16">
         {/* Filter Tabs */}
-        <div className="flex flex-wrap items-center gap-6 font-mono text-xs uppercase tracking-widest">
+        <div className="flex flex-row overflow-x-auto no-scrollbar items-center gap-4 lg:gap-6 font-mono text-xs uppercase tracking-widest border-b border-[var(--color-border)] xl:border-b-0">
           <button
             onClick={() => setFilterSeverity('ALL')}
             className={`pb-1 transition-colors border-b ${
@@ -147,18 +147,18 @@ export const SecurityAuditView: React.FC<SecurityAuditViewProps> = ({
                 key={finding.id}
                 className={`bg-[var(--color-card)] border ${cardBorder} rounded-none flex flex-col transition-colors`}
               >
-                <div className="p-8 flex-1 flex flex-col justify-between">
+                <div className="p-4 sm:p-6 lg:p-8 flex-1 flex flex-col justify-between">
                   <div>
                     {/* Title and Tag */}
-                    <div className="flex justify-between items-start mb-6 gap-6 pb-6 border-b border-[var(--color-border)]">
+                    <div className="flex flex-col sm:flex-row justify-between items-start mb-4 sm:mb-6 gap-4 sm:gap-6 pb-4 sm:pb-6 border-b border-[var(--color-border)]">
                       <div>
-                        <div className="flex items-center gap-4 mb-3">
-                          <span className={`material-symbols-outlined text-[24px] ${iconColor}`}>
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 mb-2 sm:mb-3">
+                          <span className={`material-symbols-outlined text-[20px] sm:text-[24px] ${iconColor}`}>
                             {iconName}
                           </span>
-                          <h3 className="font-display font-semibold text-2xl text-[var(--color-foreground)] tracking-wide">
+                          <h3 className="font-display font-semibold text-xl sm:text-2xl text-[var(--color-foreground)] tracking-wide">
                             {finding.title} 
-                            {isFixed && <span className="ml-4 font-mono text-[10px] font-semibold border border-[var(--color-border)] px-2 py-0.5 bg-[var(--color-muted)] text-[var(--color-muted-foreground)] uppercase tracking-widest">Fixed</span>}
+                            {isFixed && <span className="ml-2 sm:ml-4 font-mono text-[10px] font-semibold border border-[var(--color-border)] px-2 py-0.5 bg-[var(--color-muted)] text-[var(--color-muted-foreground)] uppercase tracking-widest">Fixed</span>}
                           </h3>
                         </div>
                         <p className="text-sm text-[var(--color-muted-foreground)] font-sans max-w-3xl leading-relaxed whitespace-pre-line mt-2">

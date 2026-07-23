@@ -39,9 +39,9 @@ export const TechStackView: React.FC<TechStackViewProps> = ({
   };
 
   return (
-    <div className="flex-1 overflow-y-auto p-8 lg:p-16 relative z-0 text-[var(--color-foreground)] bg-[var(--color-background)]">
+    <div className="flex-1 overflow-y-auto p-4 sm:p-8 lg:p-16 relative z-0 text-[var(--color-foreground)] bg-[var(--color-background)]">
       {/* Header */}
-      <header className="mb-16 border-b border-[var(--color-border)] pb-12 flex flex-col lg:flex-row lg:items-end justify-between gap-8">
+      <header className="mb-12 lg:mb-16 border-b border-[var(--color-border)] pb-8 lg:pb-12 flex flex-col lg:flex-row lg:items-end justify-between gap-6 lg:gap-8">
         <div>
           <div className="flex items-center gap-4 mb-8">
             <span className="w-12 h-0.5 bg-[var(--color-accent)] block" />
@@ -49,8 +49,8 @@ export const TechStackView: React.FC<TechStackViewProps> = ({
               Tech Stack
             </span>
           </div>
-          <h1 className="text-5xl lg:text-7xl font-display font-bold text-[var(--color-foreground)] mb-6 tracking-tighter leading-[0.9]">
-            Stack &<br />Blueprint.
+          <h1 className="text-4xl sm:text-5xl lg:text-7xl font-display font-bold text-[var(--color-foreground)] mb-4 lg:mb-6 tracking-tighter leading-[0.9]">
+            Stack &<br className="hidden sm:block" /> Blueprint.
           </h1>
           <p className="text-lg text-[var(--color-muted-foreground)] font-serif max-w-2xl leading-relaxed">
             Automated framework classification, version tracking, and insights across all loaded modules.
@@ -59,9 +59,9 @@ export const TechStackView: React.FC<TechStackViewProps> = ({
       </header>
 
       <div className="bg-[var(--color-card)] border border-[var(--color-border)] rounded-none overflow-hidden max-w-5xl mx-auto">
-        <div className="p-6 border-b border-[var(--color-border)] bg-[var(--color-muted)] flex items-center justify-between text-[var(--color-foreground)]">
-          <h2 className="font-display font-semibold text-xl tracking-wide flex items-center gap-4">
-            <span className="material-symbols-outlined text-[24px]">layers</span>
+        <div className="p-4 sm:p-6 border-b border-[var(--color-border)] bg-[var(--color-muted)] flex flex-col sm:flex-row sm:items-center justify-between text-[var(--color-foreground)] gap-4 sm:gap-0">
+          <h2 className="font-display font-semibold text-lg sm:text-xl tracking-wide flex items-center gap-3 sm:gap-4">
+            <span className="material-symbols-outlined text-[20px] sm:text-[24px]">layers</span>
             Detected Frameworks & Libraries
           </h2>
           <span className="font-mono text-[10px] text-[var(--color-muted-foreground)] uppercase tracking-widest font-semibold">
@@ -75,10 +75,10 @@ export const TechStackView: React.FC<TechStackViewProps> = ({
             return (
               <div key={item.id} className="flex flex-col border-b border-[var(--color-border)] last:border-b-0 group">
                 <div 
-                  className={`p-6 lg:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 hover:bg-[var(--color-input)] transition-colors cursor-pointer ${isExpanded ? 'bg-[var(--color-input)]' : ''}`}
+                  className={`p-4 sm:p-6 lg:p-8 flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6 hover:bg-[var(--color-input)] transition-colors cursor-pointer ${isExpanded ? 'bg-[var(--color-input)]' : ''}`}
                   onClick={() => handleExpand(item.id)}
                 >
-                  <div className="flex items-center gap-6">
+                  <div className="flex items-center gap-4 sm:gap-6">
                     <div 
                       className="w-16 h-16 rounded-none border border-[var(--color-border)] flex items-center justify-center font-mono font-semibold text-2xl text-[var(--color-background)] shrink-0"
                       style={{ backgroundColor: item.color }}
@@ -111,14 +111,14 @@ export const TechStackView: React.FC<TechStackViewProps> = ({
                       animate={{ height: 'auto', opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
                       transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-                      className="overflow-hidden"
+                      className="border-t border-[var(--color-border)] bg-[var(--color-background)] overflow-hidden"
                     >
-                      <div className="p-6 lg:px-8 lg:py-8 bg-[var(--color-background)] border-t border-[var(--color-border)]">
-                        <h4 className="font-mono text-xs font-bold text-[var(--color-accent)] uppercase tracking-[0.2em] mb-6 flex items-center gap-3">
+                      <div className="p-4 sm:p-6 lg:p-8 flex flex-col gap-6 lg:gap-8">
+                        <h4 className="font-mono text-xs font-bold text-[var(--color-accent)] uppercase tracking-[0.2em] flex items-center gap-3">
                           <span className="material-symbols-outlined text-[20px]">school</span>
                           Interview Brief
                         </h4>
-                        <div className="text-sm font-sans leading-relaxed text-[var(--color-foreground)]/90 max-w-4xl">
+                        <div className="text-sm sm:text-base font-sans leading-relaxed text-[var(--color-foreground)]/90 max-w-4xl">
                           <ReactMarkdown
                             components={{
                               p: ({node, ...props}) => <p className="mb-6 last:mb-0 leading-loose" {...props} />,
