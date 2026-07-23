@@ -11,8 +11,56 @@ def _sanitize_nodes(nodes: list) -> list:
 
 import os
 import json
+import time
 from typing import Dict, Any
-from groq import Groq
+from groq import Groq, RateLimitError, APIStatusError
+
+MODELS = [
+    "llama-3.1-70b-versatile",
+    "llama-3.1-8b-instant",
+    "mixtral-8x7b-32768",
+]
+
+FALLBACK_DATA = {
+    "nodes": [{"id": "node_1", "label": "Application Core", "filename": ".", "category": "logic"}],
+    "edges": []
+}
+
+def _call_groq(client: Groq, messages: list, **kwargs) -> str:
+    """Call Groq API with retry logic and model fallback."""
+    last_error = None
+    
+    for i, model in enumerate(MODELS):
+        for attempt in range(3):
+            try:
+                chat_completion = client.chat.completions.create(
+                    model=model,
+                    messages=messages,
+                    **kwargs
+                )
+                return chat_completion.choices[0].message.content.strip()
+            except RateLimitError as e:
+                last_error = e
+                if attempt < 2:
+                    time.sleep(2 ** attempt)
+                break
+            except APIStatusError as e:
+                last_error = e
+                if e.status_code == 429 and attempt < 2:
+                    time.sleep(2 ** attempt)
+                    continue
+                if e.status_code >= 500:
+                    break
+                raise
+            except Exception as e:
+                last_error = e
+                break
+        
+        if i < len(MODELS) - 1:
+            time.sleep(1)
+    
+    raise last_error
+
 
 def generate_diagram_data(stack_data: dict, structure_data: dict) -> Dict[str, Any]:
     """
@@ -20,14 +68,9 @@ def generate_diagram_data(stack_data: dict, structure_data: dict) -> Dict[str, A
     """
     api_key = os.environ.get("GROQ_API_KEY")
     
-    fallback_data = {
-        "nodes": [{"id": "node_1", "label": "Application Core", "filename": ".", "category": "logic"}],
-        "edges": []
-    }
-    
     if not api_key:
         print("GROQ_API_KEY not set. Using fallback diagram.")
-        return fallback_data
+        return FALLBACK_DATA
         
     client = Groq(api_key=api_key)
     
@@ -67,23 +110,21 @@ def generate_diagram_data(stack_data: dict, structure_data: dict) -> Dict[str, A
     """
     
     try:
-        chat_completion = client.chat.completions.create(
-            model='llama-3.3-70b-versatile',
-            messages=[{"role": "user", "content": prompt}],
+        response_text = _call_groq(
+            client, 
+            [{"role": "user", "content": prompt}],
             response_format={"type": "json_object"},
             temperature=0.2
         )
         
-        response_text = chat_completion.choices[0].message.content.strip()
         parsed_data = json.loads(response_text)
         
-        # Validate schema loosely
         if "nodes" in parsed_data and "edges" in parsed_data:
             parsed_data["nodes"] = _sanitize_nodes(parsed_data["nodes"])
             return parsed_data
         else:
-            return fallback_data
+            return FALLBACK_DATA
             
     except Exception as e:
         print(f"Failed to generate diagram with AI: {e}")
-        return fallback_data
+        return FALLBACK_DATA

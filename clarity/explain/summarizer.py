@@ -1,14 +1,88 @@
 import os
 import json
-from groq import Groq
+import time
+import hashlib
+from functools import lru_cache
+from groq import Groq, RateLimitError, APIStatusError
+
+MODELS = [
+    "llama-3.1-70b-versatile",
+    "llama-3.1-8b-instant",
+    "mixtral-8x7b-32768",
+]
+
+# Simple in-memory cache with TTL (1 hour)
+_summary_cache = {}
+_cache_ttl = 3600
+
+def _cache_key(*args) -> str:
+    """Generate cache key from input data."""
+    content = json.dumps(args, sort_keys=True, default=str)
+    return hashlib.sha256(content.encode()).hexdigest()[:32]
+
+def _get_cached(key: str) -> str | None:
+    """Get cached value if not expired."""
+    if key in _summary_cache:
+        value, timestamp = _summary_cache[key]
+        if time.time() - timestamp < _cache_ttl:
+            return value
+        del _summary_cache[key]
+    return None
+
+def _set_cache(key: str, value: str) -> None:
+    """Set cache value with current timestamp."""
+    _summary_cache[key] = (value, time.time())
+
+def _call_groq(client: Groq, messages: list, **kwargs) -> str:
+    """Call Groq API with retry logic and model fallback."""
+    last_error = None
+    
+    for i, model in enumerate(MODELS):
+        for attempt in range(3):
+            try:
+                chat_completion = client.chat.completions.create(
+                    model=model,
+                    messages=messages,
+                    **kwargs
+                )
+                return chat_completion.choices[0].message.content.strip()
+            except RateLimitError as e:
+                last_error = e
+                if attempt < 2:
+                    time.sleep(2 ** attempt)
+                break
+            except APIStatusError as e:
+                last_error = e
+                if e.status_code == 429 and attempt < 2:
+                    time.sleep(2 ** attempt)
+                    continue
+                if e.status_code >= 500:
+                    break
+                raise
+            except Exception as e:
+                last_error = e
+                break
+        
+        if i < len(MODELS) - 1:
+            time.sleep(1)
+    
+    raise last_error
+
 
 def generate_summary(stack_data: dict, structure_data: dict, pipeline_data: dict) -> str:
     """
     Sends structured data to Groq API to generate a plain-English explanation.
+    Uses in-memory cache (1hr TTL) to avoid repeated API calls for same repo.
     """
     api_key = os.environ.get("GROQ_API_KEY")
     if not api_key:
         return "Explanation unavailable: GROQ_API_KEY not set. Please get a free API key from https://console.groq.com/"
+        
+    # Check cache first
+    cache_key = _cache_key(stack_data, structure_data, pipeline_data)
+    cached = _get_cached(cache_key)
+    if cached:
+        return cached
         
     client = Groq(api_key=api_key)
     
@@ -33,16 +107,17 @@ def generate_summary(stack_data: dict, structure_data: dict, pipeline_data: dict
     """
     
     try:
-        chat_completion = client.chat.completions.create(
-            model='llama-3.3-70b-versatile',
-            messages=[{"role": "user", "content": prompt}],
-        )
-        return chat_completion.choices[0].message.content.strip()
-    except Exception as e:
-        error_msg = str(e)
-        if "503" in error_msg:
+        result = _call_groq(client, [{"role": "user", "content": prompt}])
+        _set_cache(cache_key, result)
+        return result
+    except RateLimitError:
+        return "Explanation temporarily unavailable: Rate limit exceeded. Please try again in a moment or check your Groq quota."
+    except APIStatusError as e:
+        if e.status_code == 503:
             return "Explanation temporarily unavailable: The AI model is currently experiencing high demand (503). However, you can explore the architecture diagram below."
-        return f"Explanation unavailable due to API error: {error_msg}"
+        return f"Explanation unavailable due to API error: {e}"
+    except Exception as e:
+        return f"Explanation unavailable due to API error: {str(e)}"
 
 
 def answer_question(context_data: dict, question: str, history: list = None) -> str:
@@ -72,17 +147,18 @@ def answer_question(context_data: dict, question: str, history: list = None) -> 
     messages = [{"role": "system", "content": prompt}]
     
     if history:
-        # Append up to the last 10 messages for context
         for msg in history[-10:]:
             messages.append({"role": msg.get("role", "user"), "content": msg.get("content", "")})
             
     messages.append({"role": "user", "content": question})
     
     try:
-        chat_completion = client.chat.completions.create(
-            model='llama-3.3-70b-versatile',
-            messages=messages,
-        )
-        return chat_completion.choices[0].message.content.strip()
+        return _call_groq(client, messages)
+    except RateLimitError:
+        return "Sorry, I've hit the rate limit. Please wait a moment and try again."
+    except APIStatusError as e:
+        if e.status_code == 503:
+            return "Sorry, the AI service is temporarily unavailable. Please try again shortly."
+        return f"Sorry, I encountered an API error: {e}"
     except Exception as e:
         return f"Sorry, I encountered an error answering that: {str(e)}"
