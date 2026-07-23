@@ -59,6 +59,11 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
         const data = await response.json();
         setHistory(data);
       } else {
+        if (response.status === 401 && onLogout) {
+          // Token expired or secret key changed
+          onLogout();
+          return;
+        }
         const errText = await response.text();
         setHistoryError(`API error ${response.status}: ${errText}`);
         console.error('History fetch failed:', response.status, errText);
