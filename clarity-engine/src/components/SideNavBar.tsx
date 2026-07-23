@@ -95,14 +95,6 @@ export const SideNavBar: React.FC<SideNavBarProps> = ({
           <span className="material-symbols-outlined text-[20px] lg:text-[18px]">settings</span>
           <span className={`hidden lg:inline animate-underline ${currentView === 'settings' ? 'active' : ''}`}>Settings</span>
         </a>
-
-        <a
-          href="#/docs"
-          className="hidden lg:flex w-full items-center gap-4 px-4 py-3 rounded-none text-sm font-sans font-medium transition-colors text-left text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] cursor-pointer group"
-        >
-          <span className="material-symbols-outlined text-[18px]">contact_support</span>
-          <span className="animate-underline">Support</span>
-        </a>
       </div>
     </nav>
   );
