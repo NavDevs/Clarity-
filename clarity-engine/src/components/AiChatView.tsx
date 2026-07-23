@@ -10,6 +10,55 @@ interface AiChatViewProps {
   onClose?: () => void;
 }
 
+const TypewriterMessage: React.FC<{ msg: ChatMessage, isLastAi: boolean }> = ({ msg, isLastAi }) => {
+  const [displayedText, setDisplayedText] = useState(isLastAi && msg.sender === 'ai' ? '' : msg.text);
+
+  useEffect(() => {
+    if (!(isLastAi && msg.sender === 'ai')) {
+      setDisplayedText(msg.text);
+      return;
+    }
+    let i = 0;
+    const interval = setInterval(() => {
+      i += 5; // Fast rate
+      if (i >= msg.text.length) {
+        setDisplayedText(msg.text);
+        clearInterval(interval);
+      } else {
+        setDisplayedText(msg.text.slice(0, i));
+      }
+    }, 15);
+    return () => clearInterval(interval);
+  }, [msg.text, isLastAi, msg.sender]);
+
+  return (
+    <div className="prose-like max-w-none">
+      <ReactMarkdown
+        components={{
+          p: ({node, ...props}) => <p className="mb-6 last:mb-0 leading-loose" {...props} />,
+          strong: ({node, ...props}) => <strong className="font-bold text-[var(--color-accent)]" {...props} />,
+          ul: ({node, ...props}) => <ul className="list-disc pl-6 mb-6 space-y-3 marker:text-[var(--color-accent)]" {...props} />,
+          ol: ({node, ...props}) => <ol className="list-decimal pl-6 mb-6 space-y-3 marker:text-[var(--color-accent)] font-mono text-sm" {...props} />,
+          li: ({node, ...props}) => <li className="" {...props} />,
+          h1: ({node, ...props}) => <h1 className="font-display text-2xl font-bold mb-6 mt-8 text-[var(--color-foreground)] tracking-wide" {...props} />,
+          h2: ({node, ...props}) => <h2 className="font-display text-xl font-bold mb-4 mt-8 text-[var(--color-foreground)] tracking-wide border-b border-[var(--color-border)] pb-3" {...props} />,
+          h3: ({node, ...props}) => <h3 className="font-mono text-sm font-bold mb-3 mt-6 text-[var(--color-accent)] uppercase tracking-widest" {...props} />,
+          pre: ({node, ...props}) => (
+            <div className="bg-[#0A0A0B] border border-[var(--color-border)] p-6 font-mono text-sm overflow-x-auto my-6 rounded-none shadow-inner">
+              <pre {...props} />
+            </div>
+          ),
+          code: ({node, className, children, ...props}: any) => (
+            <code className={`font-mono text-[13px] bg-[var(--color-input)] border border-[var(--color-border)] px-1.5 py-0.5 ${className || ''}`} {...props}>{children}</code>
+          )
+        }}
+      >
+        {displayedText}
+      </ReactMarkdown>
+    </div>
+  );
+};
+
 export const AiChatView: React.FC<AiChatViewProps> = ({
   messages,
   onSendMessage,
@@ -85,7 +134,12 @@ export const AiChatView: React.FC<AiChatViewProps> = ({
               </span>
             </div>
 
-            {messages.map((msg) => (
+            {messages.map((msg, index) => {
+              const isLastAi = index === messages.length - 1 && msg.sender === 'ai';
+              // Dynamic padding based on text length: min 16px, max 64px
+              const dynamicPadding = Math.min(Math.max(16 + (msg.text.length * 0.05), 16), 64);
+              
+              return (
               <div
                 key={msg.id}
                 className={`flex w-full mb-6 sm:mb-8 ${
@@ -107,11 +161,14 @@ export const AiChatView: React.FC<AiChatViewProps> = ({
                    </div>
                    
                    {/* Bubble Content */}
-                   <div className={`min-w-0 p-4 sm:p-6 lg:p-8 border rounded-none ${
-                      msg.sender === 'user' 
-                        ? 'bg-[var(--color-muted)] border-[var(--color-border)]' 
-                        : 'bg-[var(--color-card)] border-[var(--color-border)]'
-                    }`}>
+                   <div 
+                    className={`min-w-0 border rounded-none ${
+                        msg.sender === 'user' 
+                          ? 'bg-[var(--color-muted)] border-[var(--color-border)]' 
+                          : 'bg-[var(--color-card)] border-[var(--color-border)]'
+                      }`}
+                      style={{ padding: `${dynamicPadding}px` }}
+                    >
                       <div className={`flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
                         <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-muted-foreground)]">
                           {msg.sender === 'user' ? 'You' : 'Clarity AI'}
@@ -122,30 +179,7 @@ export const AiChatView: React.FC<AiChatViewProps> = ({
                         {msg.sender === 'user' ? (
                           <p className="whitespace-pre-wrap leading-relaxed">{msg.text}</p>
                         ) : (
-                          <div className="prose-like max-w-none">
-                            <ReactMarkdown
-                              components={{
-                                p: ({node, ...props}) => <p className="mb-6 last:mb-0 leading-loose" {...props} />,
-                                strong: ({node, ...props}) => <strong className="font-bold text-[var(--color-accent)]" {...props} />,
-                                ul: ({node, ...props}) => <ul className="list-disc pl-6 mb-6 space-y-3 marker:text-[var(--color-accent)]" {...props} />,
-                                ol: ({node, ...props}) => <ol className="list-decimal pl-6 mb-6 space-y-3 marker:text-[var(--color-accent)] font-mono text-sm" {...props} />,
-                                li: ({node, ...props}) => <li className="" {...props} />,
-                                h1: ({node, ...props}) => <h1 className="font-display text-2xl font-bold mb-6 mt-8 text-[var(--color-foreground)] tracking-wide" {...props} />,
-                                h2: ({node, ...props}) => <h2 className="font-display text-xl font-bold mb-4 mt-8 text-[var(--color-foreground)] tracking-wide border-b border-[var(--color-border)] pb-3" {...props} />,
-                                h3: ({node, ...props}) => <h3 className="font-mono text-sm font-bold mb-3 mt-6 text-[var(--color-accent)] uppercase tracking-widest" {...props} />,
-                                pre: ({node, ...props}) => (
-                                  <div className="bg-[#0A0A0B] border border-[var(--color-border)] p-6 font-mono text-sm overflow-x-auto my-6 rounded-none shadow-inner">
-                                    <pre {...props} />
-                                  </div>
-                                ),
-                                code: ({node, className, children, ...props}: any) => (
-                                  <code className={`font-mono text-[13px] bg-[var(--color-input)] border border-[var(--color-border)] px-1.5 py-0.5 ${className || ''}`} {...props}>{children}</code>
-                                )
-                              }}
-                            >
-                              {msg.text}
-                            </ReactMarkdown>
-                          </div>
+                          <TypewriterMessage msg={msg} isLastAi={isLastAi} />
                         )}
 
                         {msg.codeSnippet && (
@@ -157,7 +191,7 @@ export const AiChatView: React.FC<AiChatViewProps> = ({
                    </div>
                 </div>
               </div>
-            ))}
+            )})}
 
             {isGenerating && (
               <div className="flex justify-start">
