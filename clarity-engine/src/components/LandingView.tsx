@@ -138,9 +138,9 @@ export const LandingView: React.FC<LandingViewProps> = ({
             </div>
           </div>
           
-          <div className="w-full lg:w-1/2 bg-[var(--color-card)] border border-[var(--color-border)] p-0 relative overflow-hidden" style={{minHeight: '420px'}}>
+          <div className="w-full lg:w-1/2 bg-[var(--color-card)] border border-[var(--color-border)] p-0 relative overflow-hidden flex flex-col h-[420px]">
             {/* Mockup Title Bar */}
-            <div className="flex items-center gap-2 px-4 py-3 border-b border-[var(--color-border)] bg-[#0A0A0B]">
+            <div className="flex items-center gap-2 px-4 py-3 border-b border-[var(--color-border)] bg-[#0A0A0B] shrink-0">
               <div className="w-2.5 h-2.5 rounded-full bg-red-600"></div>
               <div className="w-2.5 h-2.5 rounded-full bg-yellow-500"></div>
               <div className="w-2.5 h-2.5 rounded-full bg-green-600"></div>
@@ -148,7 +148,7 @@ export const LandingView: React.FC<LandingViewProps> = ({
             </div>
             
             {/* Mockup Body */}
-            <div className="flex h-full">
+            <div className="flex flex-1 relative">
               {/* Fake Sidebar */}
               <div className="w-12 border-r border-[var(--color-border)] flex flex-col items-center gap-5 py-6 bg-[#0A0A0B]">
                 <div className="w-5 h-5 bg-[var(--color-accent)] rounded-sm opacity-80"></div>
