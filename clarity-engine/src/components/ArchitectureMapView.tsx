@@ -61,32 +61,54 @@ export const ArchitectureMapView: React.FC<ArchitectureMapViewProps> = ({
     if (codeModalOpen && activeNodeState?.path) {
       setIsLoadingCode(true);
       setLiveCode(null);
-      fetch(`https://api.github.com/repos/${repoFullName}/contents/${activeNodeState.path}`)
-        .then(res => res.json())
-        .then(data => {
+
+      // Strip any local temp directory prefix (e.g. /tmp/clarity_repo_abc123/)
+      let cleanPath = activeNodeState.path
+        .replace(/^\/tmp\/clarity_repo_[^/]+\//, '')  // remove /tmp/clarity_repo_xxx/
+        .replace(/^clarity_repo_[^/]+\//, '')          // remove clarity_repo_xxx/
+        .replace(/^\/+/, '');                           // remove leading slashes
+
+      const tryFetch = (path: string) =>
+        fetch(`https://api.github.com/repos/${repoFullName}/contents/${path}`)
+          .then(res => res.json());
+
+      const loadCode = async () => {
+        try {
+          let data = await tryFetch(cleanPath);
+
+          // If not found and path has no extension, try common extensions
+          if ((data.message === 'Not Found' || !data.content) && !cleanPath.includes('.')) {
+            const exts = ['py', 'ts', 'tsx', 'js', 'jsx', 'go', 'java', 'rs', 'rb', 'cpp', 'c', 'md'];
+            for (const ext of exts) {
+              const attempt = await tryFetch(`${cleanPath}.${ext}`);
+              if (attempt.content) { data = attempt; break; }
+            }
+          }
+
           if (Array.isArray(data)) {
             const files = data.map((item: any) => `📁 ${item.name}`).join('\n');
-            setLiveCode(`// ${activeNodeState.path} is a directory.\n// Contents:\n\n${files}`);
+            setLiveCode(`// 📂 ${cleanPath}\n// Directory contents:\n\n${files}`);
           } else if (data.content) {
             try {
-              // Decode base64 and handle UTF-8
               const decoded = decodeURIComponent(escape(window.atob(data.content)));
               setLiveCode(decoded);
             } catch(e) {
               setLiveCode(window.atob(data.content));
             }
           } else {
-            if (data.message === 'Not Found' || activeNodeState.path === '.') {
-              setLiveCode(`// 🏗️ Architectural Module: ${activeNodeState.name}\n// \n// This node represents a high-level logical component or a combination of multiple files/folders.\n// It acts as a conceptual abstraction rather than mapping to a single specific directory.`);
-            } else {
-              setLiveCode(`// Could not fetch source code.\n// GitHub API Response: ${data.message || 'Unknown error'}`);
-            }
+            setLiveCode(`// 🏗️ Architectural Module: ${activeNodeState.name}\n//\n// Path: ${cleanPath}\n// Could not load source — the file may be auto-generated or an abstraction.`);
           }
-        })
-        .catch(err => setLiveCode(`// Error fetching source code: ${err.message}`))
-        .finally(() => setIsLoadingCode(false));
+        } catch(err: any) {
+          setLiveCode(`// Error fetching source: ${err.message}`);
+        } finally {
+          setIsLoadingCode(false);
+        }
+      };
+
+      loadCode();
     }
   }, [codeModalOpen, activeNodeState, repoFullName]);
+
 
   const handleNodeClick = (node: ArchitectureNode, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -419,7 +441,10 @@ export const ArchitectureMapView: React.FC<ArchitectureMapViewProps> = ({
             <div className="px-6 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
               <div className="flex items-center gap-3 font-mono text-sm text-[var(--color-foreground)]">
                 <span className="material-symbols-outlined text-[var(--color-muted-foreground)] text-[20px]">code</span>
-                {activeNodeState.path}
+                {activeNodeState.path
+                  .replace(/^\/tmp\/clarity_repo_[^/]+\//, '')
+                  .replace(/^clarity_repo_[^/]+\//, '')
+                  .replace(/^\/+/, '') || activeNodeState.name}
               </div>
               <button
                 onClick={() => setCodeModalOpen(false)}
