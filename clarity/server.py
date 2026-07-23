@@ -104,6 +104,13 @@ async def serve_spa(full_path: str):
     # Don't intercept API routes
     if full_path.startswith("api/"):
         raise HTTPException(status_code=404, detail="Not found")
+        
+    # Check if the requested file actually exists (like favicon.svg)
+    requested_file = DIST_DIR / full_path
+    if requested_file.is_file():
+        return FileResponse(str(requested_file))
+        
+    # Otherwise, fallback to index.html for client-side routing
     index = DIST_DIR / "index.html"
     if index.exists():
         return FileResponse(str(index))
