@@ -31,7 +31,7 @@ export default function App() {
     const hash = window.location.hash.replace('#/', '');
     return (hash as ViewMode) || 'landing';
   });
-  // Remember where the user came from before going to settings
+  // Tracks which view to return to after closing Settings
   const [previousView, setPreviousView] = useState<ViewMode>('map');
 
   React.useEffect(() => {
@@ -376,9 +376,10 @@ export default function App() {
             currentView={currentView}
             onNavigate={(v) => {
               if (v === 'settings') {
-                setPreviousView(currentView); // remember where we came from
-                setCurrentView('settings');
-              } else if (v === 'docs') setDocsOpen(true);
+                setPreviousView(currentView); // remember where we are
+                setSettingsOpen(true);
+              }
+              else if (v === 'docs') setDocsOpen(true);
               else setCurrentView(v as ViewMode);
             }}
             onOpenNewScan={() => setNewScanOpen(true)}
@@ -422,10 +423,8 @@ export default function App() {
                   onNavigate={(v) => {
                     if (v === 'settings') {
                       setPreviousView('home');
-                      setCurrentView('settings');
-                    } else {
-                      setCurrentView(v);
                     }
+                    setCurrentView(v);
                   }}
                   historyRefreshKey={historyRefreshKey}
                   onLoadHistory={(scan) => {
