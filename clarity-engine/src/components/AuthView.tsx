@@ -78,7 +78,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLogin, onNavigate }) => {
       
       {/* Background Decorative Layer */}
       <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none opacity-5 select-none -z-10">
-        <span className="font-display font-bold text-[20rem] md:text-[30rem] leading-none tracking-tighter text-[var(--color-foreground)]">02</span>
+        <span className="font-display font-bold text-[12rem] sm:text-[20rem] md:text-[30rem] leading-none tracking-tighter text-[var(--color-foreground)]">02</span>
       </div>
 
       <div className="w-full max-w-md bg-[var(--color-card)] border border-[var(--color-border)] p-8 shadow-2xl relative z-20">

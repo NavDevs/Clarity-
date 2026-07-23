@@ -367,7 +367,7 @@ export default function App() {
       )}
 
       {/* Main Body Layout */}
-      <div className="flex flex-1 overflow-hidden relative">
+      <div className="flex flex-col lg:flex-row flex-1 overflow-hidden relative pb-16 lg:pb-0">
         {/* Persistent Side Navigation */}
         {currentView !== 'landing' && currentView !== 'auth' && currentView !== 'home' && currentView !== 'settings' && (
           <SideNavBar

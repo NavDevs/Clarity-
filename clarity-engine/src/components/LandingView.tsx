@@ -97,48 +97,58 @@ export const LandingView: React.FC<LandingViewProps> = ({
 
           </div>
         </div>
+      <div className="absolute top-0 right-0 w-full h-[500px] pointer-events-none opacity-[0.03] select-none z-0" 
+           style={{ background: 'radial-gradient(circle at top right, var(--color-foreground) 0%, transparent 70%)' }}>
       </div>
 
-      {/* How it Works Section */}
-      <div className="w-full relative z-20 bg-[var(--color-background)]">
-        <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-16 py-32 flex flex-col lg:flex-row gap-16 items-center">
+      {/* Hero Section */}
+      <div className="flex-1 flex flex-col justify-center px-6 lg:px-16 py-12 lg:py-0 z-10 w-full max-w-[1600px] mx-auto mt-8 lg:mt-0">
+        <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-24 w-full">
           
-          <div className="w-full lg:w-1/2 flex flex-col">
-            <h2 className="font-display font-bold text-5xl md:text-7xl text-[var(--color-foreground)] tracking-tighter mb-8">
-              From URL to<br />Intelligence.
+          <div className="w-full lg:w-1/2 flex flex-col items-start text-left">
+            <div className="flex items-center gap-4 mb-6">
+              <span className="w-8 lg:w-12 h-1 bg-[var(--color-accent)] block" />
+              <span className="font-mono text-[10px] lg:text-sm font-semibold text-[var(--color-accent)] uppercase tracking-[0.2em]">
+                System Analytics
+              </span>
+            </div>
+            
+            <h2 className="font-display font-bold text-5xl lg:text-7xl text-[var(--color-foreground)] tracking-tighter leading-[0.9] mb-6">
+              Understand<br />Any <span className="text-[var(--color-accent)]">Codebase.</span>
             </h2>
-            <p className="font-serif text-xl text-[var(--color-muted-foreground)] mb-12">
+            
+            <p className="font-serif text-lg lg:text-xl text-[var(--color-muted-foreground)] mb-8 lg:mb-12">
               Clarity Systems removes the friction of onboarding onto massive new codebases. Just plug in a URL and let our backend do the heavy lifting.
             </p>
             
-            <div className="flex flex-col gap-8">
-              <div className="flex items-start gap-6">
-                <div className="font-mono text-2xl font-bold text-[var(--color-accent)]">01.</div>
+            <div className="flex flex-col gap-6 lg:gap-8">
+              <div className="flex items-start gap-4 lg:gap-6">
+                <div className="font-mono text-xl lg:text-2xl font-bold text-[var(--color-accent)]">01.</div>
                 <div>
-                  <h4 className="font-bold text-xl text-[var(--color-foreground)] mb-2">Ingest</h4>
-                  <p className="font-mono text-sm text-[var(--color-muted-foreground)]">We securely clone the repository into our isolated container environment.</p>
+                  <h4 className="font-bold text-lg lg:text-xl text-[var(--color-foreground)] mb-1 lg:mb-2">Ingest</h4>
+                  <p className="font-mono text-xs lg:text-sm text-[var(--color-muted-foreground)]">We securely clone the repository into our isolated container environment.</p>
                 </div>
               </div>
               
-              <div className="flex items-start gap-6">
-                <div className="font-mono text-2xl font-bold text-[var(--color-accent)]">02.</div>
+              <div className="flex items-start gap-4 lg:gap-6">
+                <div className="font-mono text-xl lg:text-2xl font-bold text-[var(--color-accent)]">02.</div>
                 <div>
-                  <h4 className="font-bold text-xl text-[var(--color-foreground)] mb-2">Process</h4>
-                  <p className="font-mono text-sm text-[var(--color-muted-foreground)]">Abstract Syntax Trees are generated, secrets are audited, and the framework is detected.</p>
+                  <h4 className="font-bold text-lg lg:text-xl text-[var(--color-foreground)] mb-1 lg:mb-2">Process</h4>
+                  <p className="font-mono text-xs lg:text-sm text-[var(--color-muted-foreground)]">Abstract Syntax Trees are generated, secrets are audited, and the framework is detected.</p>
                 </div>
               </div>
               
-              <div className="flex items-start gap-6">
-                <div className="font-mono text-2xl font-bold text-[var(--color-accent)]">03.</div>
+              <div className="flex items-start gap-4 lg:gap-6">
+                <div className="font-mono text-xl lg:text-2xl font-bold text-[var(--color-accent)]">03.</div>
                 <div>
-                  <h4 className="font-bold text-xl text-[var(--color-foreground)] mb-2">Visualize</h4>
-                  <p className="font-mono text-sm text-[var(--color-muted-foreground)]">The LLM clusters the raw data into an interactive, human-readable dashboard.</p>
+                  <h4 className="font-bold text-lg lg:text-xl text-[var(--color-foreground)] mb-1 lg:mb-2">Visualize</h4>
+                  <p className="font-mono text-xs lg:text-sm text-[var(--color-muted-foreground)]">The LLM clusters the raw data into an interactive, human-readable dashboard.</p>
                 </div>
               </div>
             </div>
           </div>
           
-          <div className="w-full lg:w-1/2 bg-[var(--color-card)] border border-[var(--color-border)] p-0 relative overflow-hidden flex flex-col h-[420px]">
+          <div className="w-full lg:w-1/2 bg-[var(--color-card)] border border-[var(--color-border)] p-0 relative overflow-hidden flex flex-col h-[320px] lg:h-[420px] mt-8 lg:mt-0">
             {/* Mockup Title Bar */}
             <div className="flex items-center gap-2 px-4 py-3 border-b border-[var(--color-border)] bg-[#0A0A0B] shrink-0">
               <div className="w-2.5 h-2.5 rounded-full bg-red-600"></div>
