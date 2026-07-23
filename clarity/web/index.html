@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clarity | Understand any repo in seconds</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/styles.css">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+    
+    <!-- Landing / Hero Screen -->
+    <div id="heroSection" class="hero-screen">
+        <div class="logo-wordmark">Clarity</div>
+        <div class="hero-content">
+            <h1>Understand any repo in seconds</h1>
+            <p>Paste a GitHub URL to generate an instant architecture map and security audit.</p>
+            <div class="input-group">
+                <input type="text" id="repoUrl" placeholder="https://github.com/user/repo" autocomplete="off" spellcheck="false" />
+                <button id="analyzeBtn">Analyze Repo</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Screen -->
+    <div id="loadingSection" class="loading-screen hidden">
+        <div class="spinner"></div>
+        <div class="loading-text">Cloning repository & analyzing architecture...</div>
+    </div>
+
+    <!-- Split-Pane Dashboard Screen -->
+    <div id="resultsSection" class="dashboard-split hidden">
+        
+        <!-- Left Sidebar: Data Panel -->
+        <aside class="sidebar-panel">
+            <header class="sidebar-header">
+                <button id="backBtn" class="back-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                    Back to Search
+                </button>
+                <h2 id="repoTitle" class="repo-title">Repository</h2>
+                
+                <div class="stats-row" id="statsList">
+                    <!-- Stats Badges injected here -->
+                </div>
+            </header>
+
+            <div class="sidebar-scroll">
+                
+                <!-- Summary Section -->
+                <section class="data-section">
+                    <h3>Architecture Summary</h3>
+                    <p id="summaryText">Generating summary...</p>
+                </section>
+                
+                <!-- Security Audit Section -->
+                <section class="data-section">
+                    <h3>Security Audit</h3>
+                    <div id="envList" class="audit-list"></div>
+                    <div id="secretsList" class="audit-list"></div>
+                </section>
+                
+                <!-- Tech Stack Section -->
+                <section class="data-section">
+                    <h3>Tech Stack</h3>
+                    <div id="stackList" class="stack-tags-container">
+                        <!-- Stack tags injected here -->
+                    </div>
+                </section>
+                
+            </div>
+        </aside>
+        
+        <!-- Right Main Canvas: Interactive Diagram -->
+        <main class="canvas-panel">
+            <div id="diagramContainer">
+                <svg id="edgesSvg"></svg>
+                <div id="nodesContainer"></div>
+            </div>
+            
+            <div class="canvas-controls">
+                <div class="control-hint">Scroll to zoom • Click & drag to pan • Drag nodes to organize</div>
+            </div>
+            
+            <!-- Floating Chat Widget -->
+            <div class="chat-widget">
+                <div class="chat-header">
+                    <span>Ask AI</span>
+                    <button id="toggleChatBtn">_</button>
+                </div>
+                <div id="chatBody" class="chat-body">
+                    <div id="chatLog" class="chat-log">
+                        <div class="chat-msg ai-msg">Hi! I've analyzed this repository. What would you like to know?</div>
+                    </div>
+                    <div class="chat-input-area">
+                        <input type="text" id="chatInput" placeholder="Ask about this repo..." autocomplete="off">
+                        <button id="chatSendBtn">Send</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
