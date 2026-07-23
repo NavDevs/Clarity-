@@ -249,7 +249,7 @@ export const ArchitectureMapView: React.FC<ArchitectureMapViewProps> = ({
               
               const startX = sourceNode.x + 192;
               const startY = sourceNode.y + 60;
-              const endX = targetNode.x - 8;
+              const endX = targetNode.x;
               const endY = targetNode.y + 60;
               
               const isSelected = activeNodeState?.id === edge.source || activeNodeState?.id === edge.target;
