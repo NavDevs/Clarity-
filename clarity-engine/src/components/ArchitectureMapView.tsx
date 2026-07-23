@@ -384,11 +384,21 @@ export const ArchitectureMapView: React.FC<ArchitectureMapViewProps> = ({
         />
       )}
 
-      {/* Right Context Panel (Bottom Sheet on Mobile) */}
+      {/* Right Context Panel (Bottom Sheet on Mobile, GPU Drawer on Desktop) */}
       <aside 
-        style={{ '--panel-width': isContextPanelOpen ? `${panelWidth}px` : '0px' } as React.CSSProperties}
-        className={`fixed lg:relative bottom-0 left-0 right-0 lg:bottom-auto lg:left-auto lg:right-auto bg-[var(--color-background)] border-t lg:border-t-0 lg:border-l border-[var(--color-border)] flex flex-col z-50 lg:z-20 shrink-0 transition-all duration-300 ease-in-out transform ${activeNodeState ? 'translate-y-0' : 'translate-y-full'} lg:translate-y-0 h-[65vh] lg:h-full w-full lg:w-[var(--panel-width)] shadow-[0_-10px_40px_rgba(0,0,0,0.4)] lg:shadow-none rounded-t-xl lg:rounded-none ${!isContextPanelOpen ? 'lg:border-l-0 lg:opacity-0 pointer-events-none' : 'lg:opacity-100'}`}
+        style={{ '--panel-width': `${panelWidth}px` } as React.CSSProperties}
+        className={`fixed lg:absolute top-auto bottom-0 right-0 lg:top-0 lg:bottom-0 bg-[var(--color-background)] border-t lg:border-t-0 lg:border-l border-[var(--color-border)] flex flex-col z-50 lg:z-30 shrink-0 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] transform ${activeNodeState ? 'translate-y-0' : 'translate-y-full'} ${isContextPanelOpen ? 'lg:translate-x-0' : 'lg:translate-x-full'} lg:translate-y-0 h-[65vh] lg:h-full w-full lg:w-[var(--panel-width)] shadow-[-10px_0_30px_rgba(0,0,0,0.5)] rounded-t-xl lg:rounded-none will-change-transform`}
       >
+        {/* Hardware-Accelerated Toggle Handle (Attached to left edge of panel) */}
+        <button 
+          onClick={() => setIsContextPanelOpen(!isContextPanelOpen)}
+          className="hidden lg:flex absolute -left-10 top-1/2 -translate-y-1/2 bg-[var(--color-card)] border border-r-0 border-[var(--color-border)] p-2.5 rounded-l-xl shadow-xl hover:bg-[var(--color-accent)]/20 hover:text-[var(--color-accent)] text-[var(--color-muted-foreground)] transition-colors z-40 items-center justify-center cursor-pointer group"
+          title={isContextPanelOpen ? "Close Context Panel" : "Open Context Panel"}
+        >
+          <span className="material-symbols-outlined text-[20px] transition-transform group-hover:scale-110">
+            {isContextPanelOpen ? 'chevron_right' : 'chevron_left'}
+          </span>
+        </button>
         <div className="flex flex-col h-full min-w-[300px]">
         {/* Resize Handle (Desktop Only) */}
         <div 
@@ -534,16 +544,7 @@ export const ArchitectureMapView: React.FC<ArchitectureMapViewProps> = ({
         </div>
       </aside>
 
-      {/* Floating Toggle Button (Visible when Desktop Panel is closed) */}
-      {!isContextPanelOpen && (
-        <button
-          onClick={() => setIsContextPanelOpen(true)}
-          className="hidden lg:flex fixed top-1/2 right-0 -translate-y-1/2 bg-[var(--color-card)] border border-[var(--color-border)] border-r-0 p-3 rounded-l-xl z-40 hover:bg-[var(--color-accent)]/20 hover:text-[var(--color-accent)] text-[var(--color-muted-foreground)] transition-colors shadow-lg group"
-          title="Open Context Panel"
-        >
-          <span className="material-symbols-outlined text-[24px] group-hover:-translate-x-1 transition-transform">chevron_left</span>
-        </button>
-      )}
+
 
       {/* Code Inspection Modal */}
       {codeModalOpen && activeNodeState && (
