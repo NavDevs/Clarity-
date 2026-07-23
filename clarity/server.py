@@ -98,23 +98,7 @@ async def root():
         return FileResponse(str(index))
     return {"status": "API running. Frontend not built yet."}
 
-# Catch-all: serve index.html for all non-API routes (supports hash routing on reload)
-@app.get("/{full_path:path}")
-async def serve_spa(full_path: str):
-    # Don't intercept API routes
-    if full_path.startswith("api/"):
-        raise HTTPException(status_code=404, detail="Not found")
-        
-    # Check if the requested file actually exists (like favicon.svg)
-    requested_file = DIST_DIR / full_path
-    if requested_file.is_file():
-        return FileResponse(str(requested_file))
-        
-    # Otherwise, fallback to index.html for client-side routing
-    index = DIST_DIR / "index.html"
-    if index.exists():
-        return FileResponse(str(index))
-    raise HTTPException(status_code=404, detail="Frontend not built")
+
 
 @app.post("/api/auth/register")
 def register(req: AuthRequest, db: Session = Depends(get_db)):
@@ -269,14 +253,17 @@ async def chat_repo(req: ChatRequest, db: Session = Depends(get_db), current_use
         if req.scan_id and current_user:
             scan = db.query(ScanHistory).filter(ScanHistory.id == req.scan_id, ScanHistory.user_id == current_user.id).first()
             if scan:
-                scan_data = json.loads(scan.scan_data)
-                chat_history = req.history.copy()
-                chat_history.append({"role": "user", "content": req.question})
-                chat_history.append({"role": "assistant", "content": answer})
-                scan_data["chat_history"] = chat_history
-                scan.scan_data = json.dumps(scan_data)
-                db.commit()
-                
+                try:
+                    scan_json = json.loads(scan.scan_data)
+                    if "chat_history" not in scan_json:
+                        scan_json["chat_history"] = []
+                    scan_json["chat_history"].append({"role": "user", "content": req.question})
+                    scan_json["chat_history"].append({"role": "assistant", "content": answer})
+                    scan.scan_data = json.dumps(scan_json)
+                    db.commit()
+                except Exception:
+                    pass
+        
         return {"answer": answer}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -290,3 +277,19 @@ def delete_history_item(scan_id: int, current_user: User = Depends(get_current_u
     db.delete(scan)
     db.commit()
     return {"status": "success"}
+
+# ---------------------------------------------------------------
+# Catch-all MUST be LAST — serves React SPA for all non-API GETs
+# ---------------------------------------------------------------
+@app.get("/{full_path:path}")
+async def serve_spa(full_path: str):
+    # Check if the requested file actually exists (like favicon.svg, assets, etc.)
+    requested_file = DIST_DIR / full_path
+    if requested_file.is_file():
+        return FileResponse(str(requested_file))
+
+    # Otherwise, fallback to index.html for client-side routing
+    index = DIST_DIR / "index.html"
+    if index.exists():
+        return FileResponse(str(index))
+    raise HTTPException(status_code=404, detail="Frontend not built")
