@@ -43,13 +43,19 @@ def _call_groq(client: Groq, messages: list, **kwargs) -> str:
                 last_error = e
                 if attempt < 2:
                     time.sleep(2 ** attempt)
+                    continue
                 break
             except APIStatusError as e:
                 last_error = e
-                if e.status_code == 429 and attempt < 2:
-                    time.sleep(2 ** attempt)
-                    continue
+                if e.status_code == 429:
+                    if attempt < 2:
+                        time.sleep(2 ** attempt)
+                        continue
+                    break
                 if e.status_code >= 500:
+                    if attempt < 2:
+                        time.sleep(2 ** attempt)
+                        continue
                     break
                 raise
             except Exception as e:
