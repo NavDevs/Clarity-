@@ -1,42 +1,71 @@
 <div align="center">
-  <h1 style="color: #FF3D00; font-family: monospace;">CLARITY</h1>
-  <p><strong>Intelligent Architectural Mapping & Security Auditing</strong></p>
+  <img src="./clarity-engine/public/favicon.svg" alt="Clarity Logo" width="120" />
+  <h1>Clarity Dashboard</h1>
+  <p><strong>An AI-Powered Software Architecture Analysis Tool</strong></p>
+  <p>
+    <a href="https://clarity-t3sg.onrender.com/"><strong>🟢 Live Website: clarity-t3sg.onrender.com</strong></a>
+  </p>
 </div>
 
-Clarity is an AI-powered developer tool that takes any GitHub repository and instantly generates an animated architecture map, audits for hardcoded secrets, and answers complex context-aware questions about the codebase.
+<hr />
 
-## Tech Stack
-- **Backend**: Python, FastAPI, SQLAlchemy (SQLite)
-- **Frontend**: React, TypeScript, Tailwind CSS, Vite
-- **AI / LLM**: Groq API
-- **Auth**: Google OAuth + Local Auth
+## 🌟 What is it about?
 
-## Local Development Setup
+**Clarity** is a cutting-edge developer tool designed to instantly understand, visualize, and audit any GitHub repository. By simply pasting a public GitHub repository URL, Clarity automatically fetches the code, analyzes its structure, and leverages the power of AI to generate a comprehensive architectural map of the system.
 
-### 1. Backend (FastAPI)
-1. Navigate to the root directory
-2. Create a virtual environment: `python -m venv venv`
-3. Activate it: `.\venv\Scripts\activate` (Windows) or `source venv/bin/activate` (Mac/Linux)
-4. Install dependencies: `pip install -r requirements.txt`
-5. Create a `.env` file based on `.env.example`
-6. Run the server: `uvicorn clarity.server:app --reload`
-   *(Backend will run on http://127.0.0.1:8000)*
+It bridges the gap between code and architecture by giving developers a "bird's-eye view" of how different components, modules, and services interact with each other in a complex codebase.
 
-### 2. Frontend (React)
-1. Open a second terminal and navigate to `clarity-engine/`
-2. Install dependencies: `npm install`
-3. Start the Vite dev server: `npm run dev`
-   *(Frontend will run on http://localhost:5173)*
+## 🚀 Why should it be used?
 
-## Deployment (Render)
+Understanding a new or undocumented codebase is traditionally one of the most time-consuming tasks for a software engineer. Clarity solves this by providing:
 
-This project is configured for **Render.com** via the included `render.yaml`. 
-It deploys as a single Web Service where FastAPI serves the pre-built React static files.
+- **Instant Onboarding:** New developers can instantly grasp the high-level architecture of a project without spending days reading through hundreds of files.
+- **Visual Architecture Mapping:** Automatically generates a beautiful, interactive dependency graph showing how modules interact (Frontend UI, API Gateway, Database Models, Core Logic, etc.).
+- **Security & Environment Auditing:** Scans the codebase for missing `.env` variables and accidentally hardcoded secrets, ensuring best practices are followed.
+- **AI-Powered Code Interaction:** Click on any node in the architecture map to instantly view the actual source code, and use the integrated AI Chat to ask specific questions about how that specific module works.
+- **Documentation Generation:** Instantly summarizes the entire stack, pipeline, and file structure into plain, easy-to-understand English.
 
-1. Create a new Web Service on Render and connect your GitHub repo.
-2. Render will automatically detect the `render.yaml` configuration.
-3. **Important:** Add the following Environment Variables in the Render dashboard:
-   - `GROQ_API_KEY`: Your Groq API key for AI reasoning.
-   - `SECRET_KEY`: A secure random string for JWT signing.
-   - `GOOGLE_CLIENT_ID`: Your Google OAuth Client ID.
-   - `DATABASE_URL`: (Optional) Use a Postgres URL here if you want to switch off SQLite.
+## 🛠️ Tech Stack
+
+Clarity is built using a modern, full-stack architecture that combines high-performance backend processing with a beautiful, reactive frontend.
+
+### Frontend
+- **React.js (Vite):** Blazing fast frontend framework.
+- **Tailwind CSS:** For sleek, modern, and responsive styling.
+- **Motion (Framer Motion):** For fluid, engaging UI micro-animations and page transitions.
+- **Dagre:** For automated, algorithmic layout of complex architecture graphs.
+
+### Backend
+- **FastAPI (Python):** High-performance backend framework for handling API requests and running analysis tasks asynchronously.
+- **SQLAlchemy & PostgreSQL (Supabase):** Robust relational database for securely storing users, authentication details, and past repository scans.
+- **Groq API (Llama 3.3 70B):** Lightning-fast LLM used for intelligent code summarization, architecture inference, and the interactive chatbot.
+- **PyJWT & bcrypt:** For secure JWT-based authentication and password hashing.
+- **Google OAuth 2.0:** For seamless, one-click social login.
+
+## 📂 Structure of the Project
+
+The repository is organized into a clean monolith, separating the React frontend (Engine) from the Python backend.
+
+```text
+Clarity/
+├── clarity-engine/          # 🌐 Frontend React Application (Vite)
+│   ├── src/
+│   │   ├── components/      # UI Views (Architecture Map, Chat, Audit, Dashboard)
+│   │   ├── data/            # Initial state and mock data
+│   │   ├── App.tsx          # Main application routing and state management
+│   │   ├── index.css        # Tailwind and custom CSS variables
+│   │   └── types.ts         # TypeScript interfaces
+│   └── public/              # Static assets (Favicon)
+│
+├── clarity/                 # ⚙️ Backend API & Processing Engine (FastAPI)
+│   ├── audit/               # Security scanners (Secrets, Env vars)
+│   ├── explain/             # Repo fetching, structure mapping, and AI Diagram Gen
+│   ├── auth.py              # JWT authentication and hashing logic
+│   ├── database.py          # SQLAlchemy connection setup
+│   ├── models.py            # Database tables (Users, ScanHistory)
+│   └── server.py            # Main FastAPI server and routing
+│
+├── requirements.txt         # Python dependencies
+├── render.yaml              # Infrastructure-as-Code for Render deployment
+└── .env.example             # Environment variable template
+```
