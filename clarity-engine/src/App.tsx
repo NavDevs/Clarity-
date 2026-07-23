@@ -31,6 +31,8 @@ export default function App() {
     const hash = window.location.hash.replace('#/', '');
     return (hash as ViewMode) || 'landing';
   });
+  // Remember where the user came from before going to settings
+  const [previousView, setPreviousView] = useState<ViewMode>('map');
 
   React.useEffect(() => {
     if (window.location.hash !== `#/${currentView}`) {
@@ -373,8 +375,10 @@ export default function App() {
           <SideNavBar
             currentView={currentView}
             onNavigate={(v) => {
-              if (v === 'settings') setSettingsOpen(true);
-              else if (v === 'docs') setDocsOpen(true);
+              if (v === 'settings') {
+                setPreviousView(currentView); // remember where we came from
+                setCurrentView('settings');
+              } else if (v === 'docs') setDocsOpen(true);
               else setCurrentView(v as ViewMode);
             }}
             onOpenNewScan={() => setNewScanOpen(true)}
@@ -415,7 +419,14 @@ export default function App() {
                   onAnalyzeRepo={handleAnalyzeRepo}
                   isAnalyzing={isAnalyzing}
                   onLogout={handleLogout}
-                  onNavigate={setCurrentView}
+                  onNavigate={(v) => {
+                    if (v === 'settings') {
+                      setPreviousView('home');
+                      setCurrentView('settings');
+                    } else {
+                      setCurrentView(v);
+                    }
+                  }}
                   historyRefreshKey={historyRefreshKey}
                   onLoadHistory={(scan) => {
                     // Transform raw API response (same shape as handleAnalyzeRepo output)
@@ -559,7 +570,7 @@ export default function App() {
                   onLogout={handleLogout}
                   vigilantMode={vigilantMode}
                   onToggleVigilantMode={() => setVigilantMode(!vigilantMode)}
-                  onBack={() => setCurrentView('home')}
+                  onBack={() => setCurrentView(previousView)}
                 />
               </motion.div>
             )}
