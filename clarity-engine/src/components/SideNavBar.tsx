@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { ViewMode } from '../types';
 
 interface SideNavBarProps {
@@ -10,6 +10,10 @@ interface SideNavBarProps {
   onLogout?: () => void;
 }
 
+const MIN_WIDTH = 200;
+const MAX_WIDTH = 480;
+const DEFAULT_WIDTH = 288; // w-72 = 18rem = 288px
+
 export const SideNavBar: React.FC<SideNavBarProps> = ({
   currentView,
   onNavigate,
@@ -18,6 +22,52 @@ export const SideNavBar: React.FC<SideNavBarProps> = ({
   vigilantMode = true,
   onLogout
 }) => {
+  const [sidebarWidth, setSidebarWidth] = useState(() => {
+    try {
+      const saved = localStorage.getItem('clarity_sidebar_width');
+      return saved ? Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, parseInt(saved))) : DEFAULT_WIDTH;
+    } catch { return DEFAULT_WIDTH; }
+  });
+  const [isResizing, setIsResizing] = useState(false);
+  const startXRef = useRef(0);
+  const startWidthRef = useRef(DEFAULT_WIDTH);
+
+  const handleResizeStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+    startXRef.current = e.clientX;
+    startWidthRef.current = sidebarWidth;
+  }, [sidebarWidth]);
+
+  const handleResizeMove = useCallback((e: MouseEvent) => {
+    if (!isResizing) return;
+    const delta = e.clientX - startXRef.current;
+    const newWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, startWidthRef.current + delta));
+    setSidebarWidth(newWidth);
+  }, [isResizing]);
+
+  const handleResizeEnd = useCallback(() => {
+    if (isResizing) {
+      setIsResizing(false);
+      try { localStorage.setItem('clarity_sidebar_width', String(sidebarWidth)); } catch {}
+    }
+  }, [isResizing, sidebarWidth]);
+
+  useEffect(() => {
+    if (isResizing) {
+      document.addEventListener('mousemove', handleResizeMove);
+      document.addEventListener('mouseup', handleResizeEnd);
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+    }
+    return () => {
+      document.removeEventListener('mousemove', handleResizeMove);
+      document.removeEventListener('mouseup', handleResizeEnd);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+  }, [isResizing, handleResizeMove, handleResizeEnd]);
+
   const navItems = [
     {
       id: 'map' as ViewMode,
@@ -46,62 +96,107 @@ export const SideNavBar: React.FC<SideNavBarProps> = ({
   ];
 
   return (
-    <nav className="bg-[var(--color-background)] flex flex-row lg:flex-col fixed bottom-0 left-0 w-full lg:relative h-16 lg:h-full lg:py-8 lg:w-72 border-t lg:border-t-0 lg:border-r border-[var(--color-border)] shrink-0 z-50 lg:z-20 select-none overflow-x-auto lg:overflow-visible">
-      {/* Header (Hidden on mobile) */}
-      <div className="hidden lg:block px-8 mb-8">
-        <div className="flex items-center gap-4">
-          <div className="min-w-0">
-            <h1 className="font-display font-bold text-[var(--color-foreground)] text-2xl uppercase tracking-tighter leading-none mb-2">
-              CLARITY
-            </h1>
-            <p className="font-mono text-[10px] text-[var(--color-muted-foreground)] uppercase tracking-widest flex items-center gap-2">
-              <span className={`w-1.5 h-1.5 rounded-none ${vigilantMode ? 'bg-[var(--color-accent)]' : 'bg-[var(--color-border)]'}`} />
-              Vigilant Mode
-            </p>
+    <nav
+      className="bg-[var(--color-background)] flex flex-row lg:flex-col fixed bottom-0 left-0 w-full lg:relative h-16 lg:h-full lg:py-8 border-t lg:border-t-0 lg:border-r border-[var(--color-border)] shrink-0 z-50 lg:z-20 select-none overflow-x-auto lg:overflow-visible"
+      style={{ width: undefined }} // mobile: full width via className
+    >
+      {/* Desktop: apply dynamic width */}
+      <div
+        className="hidden lg:flex flex-col h-full relative"
+        style={{ width: `${sidebarWidth}px` }}
+      >
+        {/* Header */}
+        <div className="px-8 mb-8">
+          <div className="flex items-center gap-4">
+            <div className="min-w-0">
+              <h1 className="font-display font-bold text-[var(--color-foreground)] text-2xl uppercase tracking-tighter leading-none mb-2">
+                CLARITY
+              </h1>
+              <p className="font-mono text-[10px] text-[var(--color-muted-foreground)] uppercase tracking-widest flex items-center gap-2">
+                <span className={`w-1.5 h-1.5 rounded-none ${vigilantMode ? 'bg-[var(--color-accent)]' : 'bg-[var(--color-border)]'}`} />
+                Vigilant Mode
+              </p>
+            </div>
           </div>
+        </div>
+
+        {/* Main Navigation */}
+        <div className="flex-grow overflow-y-auto px-4 space-y-1">
+          {navItems.map((item) => {
+            const isActive = currentView === item.id;
+            return (
+              <a
+                key={item.id}
+                href={`#/${item.id}`}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-none text-sm transition-colors text-left cursor-pointer group ${
+                  isActive
+                    ? 'text-[var(--color-foreground)]'
+                    : 'text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]'
+                }`}
+              >
+                <span className={`font-mono text-xs w-6 ${isActive ? 'text-[var(--color-accent)]' : 'group-hover:text-[var(--color-accent)] transition-colors'}`}>{item.num}.</span>
+                <span className={`font-sans font-medium animate-underline whitespace-nowrap ${isActive ? 'active' : ''}`}>{item.label}</span>
+              </a>
+            );
+          })}
+        </div>
+
+        {/* Footer Navigation */}
+        <div className="mt-auto px-4 pt-8 border-t border-[var(--color-border)] space-y-1 pb-4">
+          <a
+            href="#/settings"
+            className={`w-full flex items-center gap-4 px-4 py-3 rounded-none text-sm font-sans font-medium transition-colors text-left cursor-pointer group ${
+              currentView === 'settings' ? 'text-[var(--color-foreground)]' : 'text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]'
+            }`}
+          >
+            <span className="material-symbols-outlined text-[18px]">settings</span>
+            <span className={`animate-underline whitespace-nowrap ${currentView === 'settings' ? 'active' : ''}`}>Settings</span>
+          </a>
+
+          <a
+            href="#/docs"
+            className="w-full flex items-center gap-4 px-4 py-3 rounded-none text-sm font-sans font-medium transition-colors text-left text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] cursor-pointer group"
+          >
+            <span className="material-symbols-outlined text-[18px]">contact_support</span>
+            <span className="animate-underline whitespace-nowrap">Support</span>
+          </a>
+        </div>
+
+        {/* Drag Handle */}
+        <div
+          onMouseDown={handleResizeStart}
+          className="absolute top-0 right-0 w-1 h-full cursor-col-resize group z-30 hover:bg-[var(--color-accent)] transition-colors duration-150"
+          style={{ backgroundColor: isResizing ? 'var(--color-accent)' : 'transparent' }}
+        >
+          <div className="absolute top-1/2 -translate-y-1/2 right-0 w-1 h-12 rounded-full bg-[var(--color-border)] group-hover:bg-[var(--color-accent)] transition-colors" />
         </div>
       </div>
 
-      {/* Main Navigation */}
-      <div className="flex flex-row lg:flex-col flex-1 lg:flex-grow lg:overflow-y-auto px-2 lg:px-4 space-x-1 lg:space-x-0 lg:space-y-1 items-center lg:items-stretch justify-around lg:justify-start">
+      {/* Mobile: horizontal bottom bar (icons only) */}
+      <div className="flex lg:hidden flex-row flex-1 items-center justify-around px-2">
         {navItems.map((item) => {
           const isActive = currentView === item.id;
           return (
             <a
               key={item.id}
               href={`#/${item.id}`}
-              className={`flex items-center justify-center lg:justify-start gap-3 px-3 lg:px-4 py-2 lg:py-3 rounded-none text-sm transition-colors cursor-pointer group flex-1 lg:flex-none ${
+              className={`flex items-center justify-center px-3 py-2 transition-colors cursor-pointer flex-1 ${
                 isActive
                   ? 'text-[var(--color-foreground)]'
                   : 'text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]'
               }`}
             >
-              <span className={`hidden lg:inline font-mono text-xs w-6 ${isActive ? 'text-[var(--color-accent)]' : 'group-hover:text-[var(--color-accent)] transition-colors'}`}>{item.num}.</span>
-              <span className="material-symbols-outlined lg:hidden text-[20px]">{item.icon}</span>
-              <span className={`hidden lg:inline font-sans font-medium animate-underline ${isActive ? 'active' : ''}`}>{item.label}</span>
+              <span className="material-symbols-outlined text-[20px]">{item.icon}</span>
             </a>
           );
         })}
-      </div>
-
-      {/* Footer Navigation (Hidden icons on mobile, or just push to right) */}
-      <div className="flex flex-row lg:flex-col px-2 lg:px-4 lg:pt-8 lg:border-t border-[var(--color-border)] space-x-1 lg:space-x-0 lg:space-y-1 lg:pb-4 items-center justify-end shrink-0">
         <a
           href="#/settings"
-          className={`flex items-center justify-center lg:justify-start gap-4 px-3 lg:px-4 py-2 lg:py-3 rounded-none text-sm font-sans font-medium transition-colors cursor-pointer group ${
+          className={`flex items-center justify-center px-3 py-2 transition-colors cursor-pointer ${
             currentView === 'settings' ? 'text-[var(--color-foreground)]' : 'text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]'
           }`}
         >
-          <span className="material-symbols-outlined text-[20px] lg:text-[18px]">settings</span>
-          <span className={`hidden lg:inline animate-underline ${currentView === 'settings' ? 'active' : ''}`}>Settings</span>
-        </a>
-
-        <a
-          href="#/docs"
-          className="hidden lg:flex w-full items-center gap-4 px-4 py-3 rounded-none text-sm font-sans font-medium transition-colors text-left text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] cursor-pointer group"
-        >
-          <span className="material-symbols-outlined text-[18px]">contact_support</span>
-          <span className="animate-underline">Support</span>
+          <span className="material-symbols-outlined text-[20px]">settings</span>
         </a>
       </div>
     </nav>
