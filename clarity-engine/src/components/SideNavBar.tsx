@@ -152,14 +152,6 @@ export const SideNavBar: React.FC<SideNavBarProps> = ({
             <span className="material-symbols-outlined text-[18px]">settings</span>
             <span className={`animate-underline whitespace-nowrap ${currentView === 'settings' ? 'active' : ''}`}>Settings</span>
           </a>
-
-          <a
-            href="#/docs"
-            className="w-full flex items-center gap-4 px-4 py-3 rounded-none text-sm font-sans font-medium transition-colors text-left text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] cursor-pointer group"
-          >
-            <span className="material-symbols-outlined text-[18px]">contact_support</span>
-            <span className="animate-underline whitespace-nowrap">Support</span>
-          </a>
         </div>
 
         {/* Drag Handle */}
