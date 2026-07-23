@@ -9,6 +9,7 @@ interface HomeDashboardViewProps {
   isAnalyzing?: boolean;
   onLogout?: () => void;
   onNavigate?: (view: ViewMode) => void;
+  historyRefreshKey?: number;
 }
 
 export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
@@ -18,11 +19,13 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
   onLoadHistory,
   isAnalyzing = false,
   onLogout,
-  onNavigate
+  onNavigate,
+  historyRefreshKey = 0
 }) => {
   const [inputUrl, setInputUrl] = useState('');
   const [history, setHistory] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
+  const [historyError, setHistoryError] = useState('');
 
   // Derived Stats
   const totalScans = history.length;
@@ -39,7 +42,14 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
   }, 0);
 
   const fetchHistory = async () => {
+    if (!token) {
+      setLoadingHistory(false);
+      setHistoryError('Not logged in');
+      return;
+    }
     try {
+      setLoadingHistory(true);
+      setHistoryError('');
       const response = await fetch('/api/history', {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -48,8 +58,13 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
       if (response.ok) {
         const data = await response.json();
         setHistory(data);
+      } else {
+        const errText = await response.text();
+        setHistoryError(`API error ${response.status}: ${errText}`);
+        console.error('History fetch failed:', response.status, errText);
       }
-    } catch (error) {
+    } catch (error: any) {
+      setHistoryError(`Network error: ${error.message}`);
       console.error("Failed to load history:", error);
     } finally {
       setLoadingHistory(false);
@@ -58,7 +73,7 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
 
   useEffect(() => {
     fetchHistory();
-  }, [token]);
+  }, [token, historyRefreshKey]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -178,9 +193,15 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
           
           {loadingHistory ? (
             <div className="text-[var(--color-muted-foreground)] font-mono text-sm animate-pulse">Loading history...</div>
+          ) : historyError ? (
+            <div className="p-8 border border-red-500/30 border-dashed text-center">
+              <p className="text-red-400 font-mono text-xs mb-3">Error loading history: {historyError}</p>
+              <button onClick={fetchHistory} className="font-mono text-xs text-[var(--color-accent)] underline">Retry</button>
+            </div>
           ) : history.length === 0 ? (
             <div className="p-8 border border-[var(--color-border)] border-dashed text-center">
               <p className="text-[var(--color-muted-foreground)] font-mono text-sm">No recent scans found.</p>
+              <button onClick={fetchHistory} className="mt-2 font-mono text-xs text-[var(--color-muted-foreground)] underline">Refresh</button>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

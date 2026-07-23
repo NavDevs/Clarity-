@@ -120,6 +120,7 @@ export default function App() {
   const [vigilantMode, setVigilantMode] = useState(() => {
     return localStorage.getItem('clarity_vigilant_mode') !== 'false';
   });
+  const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
 
   // Persist chat messages whenever they change
   React.useEffect(() => {
@@ -254,6 +255,8 @@ export default function App() {
       // Persist scan so it survives page reloads
       localStorage.setItem('clarity_active_scan', JSON.stringify(updatedScan));
       localStorage.setItem('clarity_chat_messages', JSON.stringify(initialChatMessages));
+      // Increment so HomeDashboardView re-fetches history next time
+      setHistoryRefreshKey(prev => prev + 1);
       setCurrentView('map');
     } catch (err) {
       console.error('Failed to parse repo:', err);
@@ -407,6 +410,7 @@ export default function App() {
                   isAnalyzing={isAnalyzing}
                   onLogout={handleLogout}
                   onNavigate={setCurrentView}
+                  historyRefreshKey={historyRefreshKey}
                   onLoadHistory={(scan) => {
                     // Transform raw API response (same shape as handleAnalyzeRepo output)
                     const data = scan.scan_data;
