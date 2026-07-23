@@ -10,7 +10,7 @@ interface AiChatViewProps {
   onClose?: () => void;
 }
 
-const TypewriterMessage: React.FC<{ msg: ChatMessage, isLastAi: boolean }> = ({ msg, isLastAi }) => {
+const TypewriterMessage: React.FC<{ msg: ChatMessage, isLastAi: boolean, onUpdate?: () => void }> = ({ msg, isLastAi, onUpdate }) => {
   const [displayedText, setDisplayedText] = useState(isLastAi && msg.sender === 'ai' ? '' : msg.text);
 
   useEffect(() => {
@@ -24,8 +24,10 @@ const TypewriterMessage: React.FC<{ msg: ChatMessage, isLastAi: boolean }> = ({ 
       if (i >= msg.text.length) {
         setDisplayedText(msg.text);
         clearInterval(interval);
+        if (onUpdate) onUpdate();
       } else {
         setDisplayedText(msg.text.slice(0, i));
+        if (onUpdate) onUpdate();
       }
     }, 15);
     return () => clearInterval(interval);
@@ -69,6 +71,10 @@ export const AiChatView: React.FC<AiChatViewProps> = ({
   const [inputText, setInputText] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+  };
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -179,7 +185,7 @@ export const AiChatView: React.FC<AiChatViewProps> = ({
                         {msg.sender === 'user' ? (
                           <p className="whitespace-pre-wrap leading-relaxed">{msg.text}</p>
                         ) : (
-                          <TypewriterMessage msg={msg} isLastAi={isLastAi} />
+                          <TypewriterMessage msg={msg} isLastAi={isLastAi} onUpdate={scrollToBottom} />
                         )}
 
                         {msg.codeSnippet && (
