@@ -3,7 +3,7 @@
   <h1>Clarity Dashboard</h1>
   <p><strong>An AI-Powered Software Architecture Analysis Tool</strong></p>
   <p>
-    <a href="https://clarity-t3sg.onrender.com/"><strong>🟢 Live Website: clarity-t3sg.onrender.com</strong></a>
+    <a href="https://clarity-8372.onrender.com/"><strong>🟢 Live Website: clarity-8372.onrender.com</strong></a>
   </p>
 </div>
 
