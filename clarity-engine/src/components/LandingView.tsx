@@ -100,6 +100,7 @@ export const LandingView: React.FC<LandingViewProps> = ({
       <div className="absolute top-0 right-0 w-full h-[500px] pointer-events-none opacity-[0.03] select-none z-0" 
            style={{ background: 'radial-gradient(circle at top right, var(--color-foreground) 0%, transparent 70%)' }}>
       </div>
+      </div>
 
       {/* Hero Section */}
       <div className="flex-1 flex flex-col justify-center px-6 lg:px-16 py-12 lg:py-0 z-10 w-full max-w-[1600px] mx-auto mt-8 lg:mt-0">
