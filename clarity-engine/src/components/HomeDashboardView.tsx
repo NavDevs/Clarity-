@@ -25,7 +25,8 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
   const [inputUrl, setInputUrl] = useState('');
   const [history, setHistory] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
-  const [historyError, setHistoryError] = useState('');
+  const [historyError, setHistoryError] = useState<string | null>(null);
+  const [deletingIds, setDeletingIds] = useState<string[]>([]);
 
   // Derived Stats
   const totalScans = history.length;
@@ -93,6 +94,7 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
+    setDeletingIds(prev => [...prev, id]);
     try {
       const res = await fetch(`/api/history/${id}`, {
         method: 'DELETE',
@@ -101,10 +103,16 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
         }
       });
       if (res.ok) {
-        setHistory(prev => prev.filter(s => s.id !== id));
+        setTimeout(() => {
+          setHistory(prev => prev.filter(s => s.id !== id));
+          setDeletingIds(prev => prev.filter(did => did !== id));
+        }, 300);
+      } else {
+        setDeletingIds(prev => prev.filter(did => did !== id));
       }
     } catch (err) {
       console.error("Failed to delete scan", err);
+      setDeletingIds(prev => prev.filter(did => did !== id));
     }
   };
 
@@ -210,11 +218,13 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {history.map((scan) => (
+              {history.map((scan) => {
+                const isDeleting = deletingIds.includes(scan.id);
+                return (
                 <div 
                   key={scan.id} 
-                  onClick={() => handleLoadScan(scan)}
-                  className="bg-[var(--color-card)] border border-[var(--color-border)] p-6 hover:border-[var(--color-accent)] cursor-pointer transition-colors group flex flex-col relative"
+                  onClick={() => !isDeleting && handleLoadScan(scan)}
+                  className={`bg-[var(--color-card)] border border-[var(--color-border)] p-6 hover:border-[var(--color-accent)] cursor-pointer transition-all duration-300 group flex flex-col relative ${isDeleting ? 'opacity-0 scale-95 pointer-events-none' : 'opacity-100 scale-100'}`}
                 >
                   <div className="flex justify-between items-start mb-4">
                     <span className="material-symbols-outlined text-[var(--color-muted-foreground)] group-hover:text-[var(--color-accent)] transition-colors">folder</span>
@@ -236,7 +246,7 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
                     {scan.repo_url}
                   </p>
                 </div>
-              ))}
+              )})}
             </div>
           )}
         </div>
