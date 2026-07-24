@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { ViewMode } from '../types';
 
 interface HomeDashboardViewProps {
@@ -94,6 +95,7 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
+    if (deletingIds.includes(id)) return;
     setDeletingIds(prev => [...prev, id]);
     try {
       const res = await fetch(`/api/history/${id}`, {
@@ -103,15 +105,11 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
         }
       });
       if (res.ok) {
-        setTimeout(() => {
-          setHistory(prev => prev.filter(s => s.id !== id));
-          setDeletingIds(prev => prev.filter(did => did !== id));
-        }, 300);
-      } else {
-        setDeletingIds(prev => prev.filter(did => did !== id));
+        setHistory(prev => prev.filter(s => s.id !== id));
       }
     } catch (err) {
       console.error("Failed to delete scan", err);
+    } finally {
       setDeletingIds(prev => prev.filter(did => did !== id));
     }
   };
@@ -217,37 +215,62 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
               <button onClick={fetchHistory} className="mt-2 font-mono text-xs text-[var(--color-muted-foreground)] underline">Refresh</button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-              {history.map((scan) => {
-                const isDeleting = deletingIds.includes(scan.id);
-                return (
-                <div 
-                  key={scan.id} 
-                  onClick={() => !isDeleting && handleLoadScan(scan)}
-                  className={`bg-[var(--color-card)] border border-[var(--color-border)] p-4 sm:p-6 hover:border-[var(--color-accent)] cursor-pointer transition-all duration-300 group flex flex-col relative ${isDeleting ? 'opacity-0 scale-95 pointer-events-none' : 'opacity-100 scale-100'}`}
-                >
-                  <div className="flex justify-between items-start mb-4">
-                    <span className="material-symbols-outlined text-[var(--color-muted-foreground)] group-hover:text-[var(--color-accent)] transition-colors">folder</span>
-                    <div className="flex items-center gap-3">
-                      <span className="text-[10px] font-mono text-[var(--color-muted-foreground)]">
-                        {new Date(scan.created_at).toLocaleDateString()}
-                      </span>
-                      <button 
-                        onClick={(e) => handleDelete(e, scan.id)}
-                        className="text-[var(--color-muted-foreground)] hover:text-red-500 transition-colors flex items-center justify-center w-6 h-6 rounded-full hover:bg-[var(--color-background)]"
-                        title="Delete scan"
-                      >
-                        <span className="material-symbols-outlined text-[16px]">delete</span>
-                      </button>
-                    </div>
-                  </div>
-                  <h3 className="font-display font-bold text-lg text-[var(--color-foreground)] mb-2 break-all pr-8">{scan.repo_name}</h3>
-                  <p className="font-mono text-xs text-[var(--color-muted-foreground)] mt-auto line-clamp-1 truncate">
-                    {scan.repo_url}
-                  </p>
-                </div>
-              )})}
-            </div>
+            <motion.div 
+              layout
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"
+            >
+              <AnimatePresence mode="popLayout">
+                {history.map((scan) => {
+                  const isDeleting = deletingIds.includes(scan.id);
+                  return (
+                    <motion.div 
+                      key={scan.id}
+                      layout
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: isDeleting ? 0.3 : 1, scale: isDeleting ? 0.95 : 1 }}
+                      exit={{ 
+                        opacity: 0, 
+                        scale: 0.8, 
+                        filter: 'blur(8px)',
+                        transition: { duration: 0.25 }
+                      }}
+                      transition={{
+                        layout: { duration: 0.35, ease: [0.16, 1, 0.3, 1] },
+                        opacity: { duration: 0.25 },
+                        scale: { duration: 0.25 }
+                      }}
+                      onClick={() => !isDeleting && handleLoadScan(scan)}
+                      className={`bg-[var(--color-card)] border border-[var(--color-border)] p-4 sm:p-6 hover:border-[var(--color-accent)] cursor-pointer transition-colors duration-200 group flex flex-col relative ${isDeleting ? 'pointer-events-none' : ''}`}
+                    >
+                      <div className="flex justify-between items-start mb-4">
+                        <span className="material-symbols-outlined text-[var(--color-muted-foreground)] group-hover:text-[var(--color-accent)] transition-colors">folder</span>
+                        <div className="flex items-center gap-3">
+                          <span className="text-[10px] font-mono text-[var(--color-muted-foreground)]">
+                            {new Date(scan.created_at).toLocaleDateString()}
+                          </span>
+                          <button 
+                            onClick={(e) => handleDelete(e, scan.id)}
+                            disabled={isDeleting}
+                            className="text-[var(--color-muted-foreground)] hover:text-red-500 transition-colors flex items-center justify-center w-6 h-6 rounded-full hover:bg-[var(--color-background)] disabled:opacity-50"
+                            title="Delete scan"
+                          >
+                            {isDeleting ? (
+                              <span className="material-symbols-outlined text-[16px] animate-spin">sync</span>
+                            ) : (
+                              <span className="material-symbols-outlined text-[16px]">delete</span>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                      <h3 className="font-display font-bold text-lg text-[var(--color-foreground)] mb-2 break-all pr-8">{scan.repo_name}</h3>
+                      <p className="font-mono text-xs text-[var(--color-muted-foreground)] mt-auto line-clamp-1 truncate">
+                        {scan.repo_url}
+                      </p>
+                    </motion.div>
+                  );
+                })}
+              </AnimatePresence>
+            </motion.div>
           )}
         </div>
       </div>
