@@ -248,25 +248,90 @@ export const ArchitectureMapView: React.FC<ArchitectureMapViewProps> = ({
               const targetNode = nodes.find(n => n.id === edge.target);
               if (!sourceNode || !targetNode || edge.source === edge.target) return null;
               
-              const startX = sourceNode.x + 192;
-              const startY = sourceNode.y + 60;
-              const endX = targetNode.x;
-              const endY = targetNode.y + 60;
+              // Node dimensions
+              const nodeW = 192;
+              const nodeH = 120;
               
-              // Guard: skip degenerate edges where start and end are same point
-              if (Math.abs(startX - endX) < 1 && Math.abs(startY - endY) < 1) return null;
+              // Center points of each node
+              const srcCX = sourceNode.x + nodeW / 2;
+              const srcCY = sourceNode.y + nodeH / 2;
+              const tgtCX = targetNode.x + nodeW / 2;
+              const tgtCY = targetNode.y + nodeH / 2;
               
-              const isSelected = activeNodeState?.id === edge.source || activeNodeState?.id === edge.target;
+              // Determine best exit/entry sides based on relative position
+              const dx = tgtCX - srcCX;
+              const dy = tgtCY - srcCY;
               
-              return (
-                <path 
-                  key={i} 
-                  className={`connection edge-animated transition-all duration-300 ${isSelected ? 'stroke-[var(--color-accent)] opacity-100 z-10' : 'stroke-[var(--color-muted-foreground)] opacity-50'}`} 
-                  style={{ strokeWidth: isSelected ? 2 : 1.5 }}
-                  markerEnd={isSelected ? "url(#arrowhead-active)" : "url(#arrowhead-normal)"}
-                  d={`M ${startX} ${startY} C ${startX + 80} ${startY}, ${endX - 80} ${endY}, ${endX} ${endY}`} 
-                />
-              );
+              let startX: number, startY: number, endX: number, endY: number;
+              let cpDist: number;
+              
+              if (Math.abs(dx) >= Math.abs(dy)) {
+                // Primarily horizontal connection
+                if (dx >= 0) {
+                  // Target is to the RIGHT of source
+                  startX = sourceNode.x + nodeW;
+                  startY = srcCY;
+                  endX = targetNode.x;
+                  endY = tgtCY;
+                } else {
+                  // Target is to the LEFT of source
+                  startX = sourceNode.x;
+                  startY = srcCY;
+                  endX = targetNode.x + nodeW;
+                  endY = tgtCY;
+                }
+                cpDist = Math.max(Math.abs(dx) * 0.4, 40);
+                const cpStartX = dx >= 0 ? startX + cpDist : startX - cpDist;
+                const cpEndX = dx >= 0 ? endX - cpDist : endX + cpDist;
+                
+                // Guard: skip degenerate
+                if (Math.abs(startX - endX) < 1 && Math.abs(startY - endY) < 1) return null;
+                
+                const isSelected = activeNodeState?.id === edge.source || activeNodeState?.id === edge.target;
+                
+                return (
+                  <path 
+                    key={i} 
+                    className={`connection edge-animated transition-all duration-300 ${isSelected ? 'stroke-[var(--color-accent)] opacity-100 z-10' : 'stroke-[var(--color-muted-foreground)] opacity-50'}`} 
+                    style={{ strokeWidth: isSelected ? 2 : 1.5 }}
+                    markerEnd={isSelected ? "url(#arrowhead-active)" : "url(#arrowhead-normal)"}
+                    d={`M ${startX} ${startY} C ${cpStartX} ${startY}, ${cpEndX} ${endY}, ${endX} ${endY}`} 
+                  />
+                );
+              } else {
+                // Primarily vertical connection
+                if (dy >= 0) {
+                  // Target is BELOW source
+                  startX = srcCX;
+                  startY = sourceNode.y + nodeH;
+                  endX = tgtCX;
+                  endY = targetNode.y;
+                } else {
+                  // Target is ABOVE source
+                  startX = srcCX;
+                  startY = sourceNode.y;
+                  endX = tgtCX;
+                  endY = targetNode.y + nodeH;
+                }
+                cpDist = Math.max(Math.abs(dy) * 0.4, 40);
+                const cpStartY = dy >= 0 ? startY + cpDist : startY - cpDist;
+                const cpEndY = dy >= 0 ? endY - cpDist : endY + cpDist;
+                
+                // Guard: skip degenerate
+                if (Math.abs(startX - endX) < 1 && Math.abs(startY - endY) < 1) return null;
+                
+                const isSelected = activeNodeState?.id === edge.source || activeNodeState?.id === edge.target;
+                
+                return (
+                  <path 
+                    key={i} 
+                    className={`connection edge-animated transition-all duration-300 ${isSelected ? 'stroke-[var(--color-accent)] opacity-100 z-10' : 'stroke-[var(--color-muted-foreground)] opacity-50'}`} 
+                    style={{ strokeWidth: isSelected ? 2 : 1.5 }}
+                    markerEnd={isSelected ? "url(#arrowhead-active)" : "url(#arrowhead-normal)"}
+                    d={`M ${startX} ${startY} C ${startX} ${cpStartY}, ${endX} ${cpEndY}, ${endX} ${endY}`} 
+                  />
+                );
+              }
             })}
           </svg>
 
