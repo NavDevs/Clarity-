@@ -246,12 +246,15 @@ export const ArchitectureMapView: React.FC<ArchitectureMapViewProps> = ({
             {edges.map((edge, i) => {
               const sourceNode = nodes.find(n => n.id === edge.source);
               const targetNode = nodes.find(n => n.id === edge.target);
-              if (!sourceNode || !targetNode) return null;
+              if (!sourceNode || !targetNode || edge.source === edge.target) return null;
               
               const startX = sourceNode.x + 192;
               const startY = sourceNode.y + 60;
               const endX = targetNode.x;
               const endY = targetNode.y + 60;
+              
+              // Guard: skip degenerate edges where start and end are same point
+              if (Math.abs(startX - endX) < 1 && Math.abs(startY - endY) < 1) return null;
               
               const isSelected = activeNodeState?.id === edge.source || activeNodeState?.id === edge.target;
               
@@ -261,7 +264,7 @@ export const ArchitectureMapView: React.FC<ArchitectureMapViewProps> = ({
                   className={`connection edge-animated transition-all duration-300 ${isSelected ? 'stroke-[var(--color-accent)] opacity-100 z-10' : 'stroke-[var(--color-muted-foreground)] opacity-50'}`} 
                   style={{ strokeWidth: isSelected ? 2 : 1.5 }}
                   markerEnd={isSelected ? "url(#arrowhead-active)" : "url(#arrowhead-normal)"}
-                  d={`M ${startX} ${startY} C ${startX + 50} ${startY}, ${endX - 50} ${endY}, ${endX} ${endY}`} 
+                  d={`M ${startX} ${startY} C ${startX + 80} ${startY}, ${endX - 80} ${endY}, ${endX} ${endY}`} 
                 />
               );
             })}

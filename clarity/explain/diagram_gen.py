@@ -127,6 +127,14 @@ def generate_diagram_data(stack_data: dict, structure_data: dict) -> Dict[str, A
         
         if "nodes" in parsed_data and "edges" in parsed_data:
             parsed_data["nodes"] = _sanitize_nodes(parsed_data["nodes"])
+            valid_ids = {str(n.get("id")).strip() for n in parsed_data["nodes"] if n.get("id")}
+            sanitized_edges = []
+            for e in parsed_data.get("edges", []):
+                src = str(e.get("source", "")).strip()
+                tgt = str(e.get("target", "")).strip()
+                if src in valid_ids and tgt in valid_ids and src != tgt:
+                    sanitized_edges.append({"source": src, "target": tgt})
+            parsed_data["edges"] = sanitized_edges
             return parsed_data
         else:
             return FALLBACK_DATA
