@@ -55,8 +55,13 @@ export const SideNavBar: React.FC<SideNavBarProps> = ({
       <div className="hidden lg:block px-6 mb-6">
         <div className="flex items-center gap-4">
           <div className="min-w-0 w-full">
-            <h1 className="font-display font-bold text-[var(--color-foreground)] text-2xl uppercase tracking-tighter leading-none mb-3">
-              CLARITY
+            <h1 
+              onClick={() => onNavigate('home')}
+              className="font-display font-bold text-[var(--color-foreground)] text-2xl uppercase tracking-tighter leading-none mb-3 cursor-pointer hover:text-[var(--color-accent)] transition-colors flex items-center justify-between group"
+              title="Return to Dashboard"
+            >
+              <span>CLARITY</span>
+              <span className="material-symbols-outlined text-[18px] opacity-0 group-hover:opacity-100 text-[var(--color-accent)] transition-opacity">grid_view</span>
             </h1>
             
             {/* Active Repo Name (replaces Vigilant Mode when in a project) */}
@@ -105,8 +110,19 @@ export const SideNavBar: React.FC<SideNavBarProps> = ({
       {/* Footer Navigation */}
       <div className="flex flex-row lg:flex-col px-2 lg:px-4 lg:pt-6 lg:border-t border-[var(--color-border)] space-x-1 lg:space-x-0 lg:space-y-1.5 lg:pb-4 items-center justify-end shrink-0">
         <a
+          onClick={(e) => { e.preventDefault(); onNavigate('home'); }}
+          href="#/home"
+          className="flex items-center justify-center lg:justify-start gap-3 px-3 lg:px-5 py-2.5 lg:py-3.5 rounded-none text-sm font-sans font-medium transition-colors cursor-pointer group text-[var(--color-muted-foreground)] hover:text-[var(--color-accent)] hover:bg-[var(--color-card)]/50"
+          title="Return to Dashboard"
+        >
+          <span className="material-symbols-outlined text-[20px] lg:text-[18px]">arrow_back</span>
+          <span className="hidden lg:inline font-mono text-xs uppercase tracking-wider font-semibold">Dashboard</span>
+        </a>
+
+        <a
           href="#/settings"
-          className={`flex items-center justify-center lg:justify-start gap-4 px-3 lg:px-5 py-2.5 lg:py-3.5 rounded-none text-sm font-sans font-medium transition-colors cursor-pointer group ${
+          onClick={(e) => { e.preventDefault(); onNavigate('settings'); }}
+          className={`flex items-center justify-center lg:justify-start gap-3 px-3 lg:px-5 py-2.5 lg:py-3.5 rounded-none text-sm font-sans font-medium transition-colors cursor-pointer group ${
             currentView === 'settings' ? 'text-[var(--color-foreground)] bg-[var(--color-card)]' : 'text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] hover:bg-[var(--color-card)]/50'
           }`}
         >
