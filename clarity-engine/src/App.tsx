@@ -352,22 +352,7 @@ export default function App() {
 
   return (
     <div className="flex flex-col h-screen w-screen bg-[var(--color-background)] text-[var(--color-foreground)] font-sans overflow-hidden bg-noise">
-      {/* Top Navigation */}
-      {currentView !== 'landing' && currentView !== 'auth' && currentView !== 'home' && (
-        <TopNavBar
-          currentView={currentView}
-          onNavigate={(v) => {
-            if (v === 'docs') setDocsOpen(true);
-            else if (v === 'pricing') setPricingOpen(true);
-            else setCurrentView(v);
-          }}
-          onOpenNewScan={() => setNewScanOpen(true)}
-          onOpenDocs={() => setDocsOpen(true)}
-          onOpenPricing={() => setPricingOpen(true)}
-          activeRepoName={activeScan.repoName}
-          onSearchQuery={handleSearchQuery}
-        />
-      )}
+      {/* Top Navigation - Removed for cleaner full-height layout */}
 
       {/* Main Body Layout */}
       <div className="flex flex-col lg:flex-row flex-1 overflow-hidden relative pb-16 lg:pb-0">
