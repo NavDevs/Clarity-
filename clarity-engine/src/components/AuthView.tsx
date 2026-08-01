@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { GoogleLogin } from '@react-oauth/google';
 import { ViewMode } from '../types';
+import { API_BASE } from '../config';
 
 interface AuthViewProps {
   onLogin: (token: string, username: string, authProvider?: string) => void;
@@ -23,7 +24,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLogin, onNavigate }) => {
     }
     
     setLoading(true);
-    const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
+    const endpoint = isLogin ? `${API_BASE}/api/auth/login` : `${API_BASE}/api/auth/register`;
     
     try {
       const response = await fetch(endpoint, {
@@ -50,7 +51,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLogin, onNavigate }) => {
     setLoading(true);
     
     try {
-      const response = await fetch('/api/auth/google', {
+      const response = await fetch(`${API_BASE}/api/auth/google`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ credential: credentialResponse.credential })

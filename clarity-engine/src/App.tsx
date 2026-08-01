@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import dagre from 'dagre';
 import { ViewMode, ArchitectureNode, SecurityFinding, ChatMessage, RepositoryScan } from './types';
+import { API_BASE } from './config';
 import { initialScan, initialChatMessages } from './data/initialData';
 
 // Strip /tmp/clarity_repo_xxx/ prefixes from backend paths
@@ -154,7 +155,7 @@ export default function App() {
       const headers: any = { 'Content-Type': 'application/json' };
       if (token) headers['Authorization'] = `Bearer ${token}`;
 
-      const response = await fetch('/api/analyze', {
+      const response = await fetch(`${API_BASE}/api/analyze`, {
         method: 'POST',
         headers: headers,
         body: JSON.stringify({ repo_url: repoUrl })
@@ -287,7 +288,7 @@ export default function App() {
     setIsGeneratingChat(true);
 
     try {
-      const response = await fetch('/api/chat', {
+      const response = await fetch(`${API_BASE}/api/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

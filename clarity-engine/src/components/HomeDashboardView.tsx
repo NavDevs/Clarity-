@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ViewMode } from '../types';
+import { API_BASE } from '../config';
 
 interface HomeDashboardViewProps {
   token: string;
@@ -52,7 +53,7 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
     try {
       setLoadingHistory(true);
       setHistoryError('');
-      const response = await fetch('/api/history', {
+      const response = await fetch(`${API_BASE}/api/history`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -98,7 +99,7 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
     if (deletingIds.includes(id)) return;
     setDeletingIds(prev => [...prev, id]);
     try {
-      const res = await fetch(`/api/history/${id}`, {
+      const res = await fetch(`${API_BASE}/api/history/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`

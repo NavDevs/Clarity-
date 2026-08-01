@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE } from '../config';
 
 interface SettingsViewProps {
   token: string;
@@ -58,7 +59,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
     setIsUpdatingPwd(true);
     try {
-      const res = await fetch('/api/auth/update_password', {
+      const res = await fetch(`${API_BASE}/api/auth/update_password`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

@@ -1,14 +1,11 @@
 services:
+  # Backend API — Python Web Service (spins up on demand)
   - type: web
-    name: clarity
+    name: clarity-api
     env: python
     region: oregon
     plan: free
-    buildCommand: |
-      pip install -r requirements.txt &&
-      cd clarity-engine &&
-      npm install &&
-      npm run build
+    buildCommand: pip install -r requirements.txt
     startCommand: uvicorn clarity.server:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: GROQ_API_KEY
@@ -18,4 +15,22 @@ services:
       - key: GOOGLE_CLIENT_ID
         sync: false
       - key: DATABASE_URL
+        sync: false
+
+  # Frontend UI — Static Site (always alive, never sleeps)
+  - type: web
+    name: clarity-ui
+    env: static
+    region: oregon
+    plan: free
+    buildCommand: cd clarity-engine && npm install && npm run build
+    staticPublishPath: clarity-engine/dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        sync: false
+      - key: VITE_GOOGLE_CLIENT_ID
         sync: false
