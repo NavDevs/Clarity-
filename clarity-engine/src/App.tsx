@@ -385,6 +385,7 @@ export default function App() {
             }}
             onOpenNewScan={() => setNewScanOpen(true)}
             vigilantMode={vigilantMode}
+            activeRepoName={activeScan.repoName !== 'facebook/react' ? activeScan.repoName : ''}
             username={username}
             onLogout={handleLogout}
           />

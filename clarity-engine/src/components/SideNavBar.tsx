@@ -7,6 +7,7 @@ interface SideNavBarProps {
   onOpenNewScan: () => void;
   username?: string;
   vigilantMode?: boolean;
+  activeRepoName?: string;
   onLogout?: () => void;
 }
 
@@ -16,6 +17,7 @@ export const SideNavBar: React.FC<SideNavBarProps> = ({
   onOpenNewScan,
   username = 'guest',
   vigilantMode = true,
+  activeRepoName = '',
   onLogout
 }) => {
   const navItems = [
@@ -45,35 +47,51 @@ export const SideNavBar: React.FC<SideNavBarProps> = ({
     }
   ];
 
+  const isInProject = currentView !== 'home' && currentView !== 'landing' && currentView !== 'auth';
+
   return (
-    <nav className="bg-[var(--color-background)] flex flex-row lg:flex-col fixed bottom-0 left-0 w-full lg:relative h-16 lg:h-full lg:py-8 lg:w-72 border-t lg:border-t-0 lg:border-r border-[var(--color-border)] shrink-0 z-50 lg:z-20 select-none overflow-x-auto lg:overflow-visible">
-      {/* Header (Hidden on mobile) */}
-      <div className="hidden lg:block px-8 mb-8">
+    <nav className="bg-[var(--color-background)] flex flex-row lg:flex-col fixed bottom-0 left-0 w-full lg:relative h-16 lg:h-full lg:py-6 lg:w-72 border-t lg:border-t-0 lg:border-r border-[var(--color-border)] shrink-0 z-50 lg:z-20 select-none overflow-x-auto lg:overflow-visible">
+      {/* Header */}
+      <div className="hidden lg:block px-6 mb-6">
         <div className="flex items-center gap-4">
-          <div className="min-w-0">
-            <h1 className="font-display font-bold text-[var(--color-foreground)] text-2xl uppercase tracking-tighter leading-none mb-2">
+          <div className="min-w-0 w-full">
+            <h1 className="font-display font-bold text-[var(--color-foreground)] text-2xl uppercase tracking-tighter leading-none mb-3">
               CLARITY
             </h1>
-            <p className="font-mono text-[10px] text-[var(--color-muted-foreground)] uppercase tracking-widest flex items-center gap-2">
-              <span className={`w-1.5 h-1.5 rounded-none ${vigilantMode ? 'bg-[var(--color-accent)]' : 'bg-[var(--color-border)]'}`} />
-              Vigilant Mode
-            </p>
+            
+            {/* Active Repo Name (replaces Vigilant Mode when in a project) */}
+            {isInProject && activeRepoName ? (
+              <div className="bg-[var(--color-card)] border border-[var(--color-border)] p-3 rounded-none">
+                <p className="font-mono text-[9px] text-[var(--color-muted-foreground)] uppercase tracking-widest mb-1.5">
+                  Active Repository
+                </p>
+                <p className="font-mono text-xs text-[var(--color-accent)] font-semibold break-all leading-relaxed flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[14px]">folder_open</span>
+                  {activeRepoName}
+                </p>
+              </div>
+            ) : (
+              <p className="font-mono text-[10px] text-[var(--color-muted-foreground)] uppercase tracking-widest flex items-center gap-2">
+                <span className={`w-1.5 h-1.5 rounded-none ${vigilantMode ? 'bg-[var(--color-accent)]' : 'bg-[var(--color-border)]'}`} />
+                Vigilant Mode
+              </p>
+            )}
           </div>
         </div>
       </div>
 
       {/* Main Navigation */}
-      <div className="flex flex-row lg:flex-col flex-1 lg:flex-grow lg:overflow-y-auto px-2 lg:px-4 space-x-1 lg:space-x-0 lg:space-y-1 items-center lg:items-stretch justify-around lg:justify-start">
+      <div className="flex flex-row lg:flex-col flex-1 lg:flex-grow lg:overflow-y-auto px-2 lg:px-4 space-x-1 lg:space-x-0 lg:space-y-1.5 items-center lg:items-stretch justify-around lg:justify-start">
         {navItems.map((item) => {
           const isActive = currentView === item.id;
           return (
             <a
               key={item.id}
               href={`#/${item.id}`}
-              className={`flex items-center justify-center lg:justify-start gap-3 px-3 lg:px-4 py-2 lg:py-3 rounded-none text-sm transition-colors cursor-pointer group flex-1 lg:flex-none ${
+              className={`flex items-center justify-center lg:justify-start gap-3 px-3 lg:px-5 py-2.5 lg:py-3.5 rounded-none text-sm transition-colors cursor-pointer group flex-1 lg:flex-none ${
                 isActive
-                  ? 'text-[var(--color-foreground)]'
-                  : 'text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]'
+                  ? 'text-[var(--color-foreground)] bg-[var(--color-card)]'
+                  : 'text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] hover:bg-[var(--color-card)]/50'
               }`}
             >
               <span className={`hidden lg:inline font-mono text-xs w-6 ${isActive ? 'text-[var(--color-accent)]' : 'group-hover:text-[var(--color-accent)] transition-colors'}`}>{item.num}.</span>
@@ -84,12 +102,12 @@ export const SideNavBar: React.FC<SideNavBarProps> = ({
         })}
       </div>
 
-      {/* Footer Navigation (Hidden icons on mobile, or just push to right) */}
-      <div className="flex flex-row lg:flex-col px-2 lg:px-4 lg:pt-8 lg:border-t border-[var(--color-border)] space-x-1 lg:space-x-0 lg:space-y-1 lg:pb-4 items-center justify-end shrink-0">
+      {/* Footer Navigation */}
+      <div className="flex flex-row lg:flex-col px-2 lg:px-4 lg:pt-6 lg:border-t border-[var(--color-border)] space-x-1 lg:space-x-0 lg:space-y-1.5 lg:pb-4 items-center justify-end shrink-0">
         <a
           href="#/settings"
-          className={`flex items-center justify-center lg:justify-start gap-4 px-3 lg:px-4 py-2 lg:py-3 rounded-none text-sm font-sans font-medium transition-colors cursor-pointer group ${
-            currentView === 'settings' ? 'text-[var(--color-foreground)]' : 'text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]'
+          className={`flex items-center justify-center lg:justify-start gap-4 px-3 lg:px-5 py-2.5 lg:py-3.5 rounded-none text-sm font-sans font-medium transition-colors cursor-pointer group ${
+            currentView === 'settings' ? 'text-[var(--color-foreground)] bg-[var(--color-card)]' : 'text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] hover:bg-[var(--color-card)]/50'
           }`}
         >
           <span className="material-symbols-outlined text-[20px] lg:text-[18px]">settings</span>
