@@ -21,10 +21,10 @@ const ChatBubble: React.FC<{ msg: ChatMessage, isLastAi: boolean, onScrollToBott
     
     let i = 0;
     const textLength = msg.text.length;
-    // Balanced, readable speeds:
-    // Short messages type character-by-character; long ones scale step slightly but keep it smooth
-    const step = textLength > 800 ? 3 : textLength > 300 ? 2 : 1;
-    const delay = textLength > 800 ? 18 : 24;
+    // Keep step=1 so it always types smoothly character-by-character.
+    // Adjust delay dynamically so long messages don't take forever, but aren't blindingly fast.
+    const step = 1;
+    const delay = textLength > 1000 ? 10 : textLength > 500 ? 14 : 20;
 
     const interval = setInterval(() => {
       i += step;
