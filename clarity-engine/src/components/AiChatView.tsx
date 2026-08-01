@@ -246,12 +246,7 @@ export const AiChatView: React.FC<AiChatViewProps> = ({
                 </button>
               </form>
 
-              <div className="flex justify-between items-center mt-1 px-1 text-[10px] font-mono font-semibold text-[var(--color-muted-foreground)] uppercase tracking-widest">
-                <span className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[14px]">bolt</span>
-                  Enter to send, Shift+Enter for new line
-                </span>
-              </div>
+              {/* Instruction text removed to save space */}
             </div>
           </div>
         </div>
