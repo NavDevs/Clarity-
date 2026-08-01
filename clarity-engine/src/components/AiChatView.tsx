@@ -172,11 +172,17 @@ export const AiChatView: React.FC<AiChatViewProps> = ({
                    
                    {/* Bubble Content */}
                    <div 
-                    className={`flex-1 min-w-0 border rounded-none p-4 sm:p-6 ${
+                    className={`flex-1 min-w-0 border rounded-none ${
                         msg.sender === 'user' 
                           ? 'bg-[var(--color-muted)] border-[var(--color-border)]' 
                           : 'bg-[var(--color-card)] border-[var(--color-border)]'
                       }`}
+                      style={{ 
+                        paddingTop: `${Math.min(Math.max(8 + (msg.text.length * 0.01), 8), 20)}px`,
+                        paddingBottom: `${Math.min(Math.max(8 + (msg.text.length * 0.01), 8), 20)}px`,
+                        paddingLeft: `${Math.min(Math.max(12 + (msg.text.length * 0.015), 12), 24)}px`,
+                        paddingRight: `${Math.min(Math.max(12 + (msg.text.length * 0.015), 12), 24)}px`
+                      }}
                     >
                       <div className={`flex items-center gap-2 mb-2 sm:mb-3 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
                         <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-muted-foreground)]">
