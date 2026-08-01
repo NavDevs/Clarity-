@@ -115,10 +115,10 @@ export const AiChatView: React.FC<AiChatViewProps> = ({
     <div className="flex-1 relative flex flex-col min-w-0 h-full overflow-hidden bg-[var(--color-background)] text-[var(--color-foreground)]">
 
       {/* AI Chat Main Interface Panel */}
-      <div className="flex-1 flex justify-center z-10 p-0 sm:p-6 overflow-hidden">
-        <div className="w-full h-full flex flex-col bg-[var(--color-card)] border-x-0 sm:border-x border-y-0 sm:border-y border-[var(--color-border)] overflow-hidden">
+      <div className="flex-1 flex z-10 p-0 overflow-hidden">
+        <div className="w-full h-full flex flex-col bg-[var(--color-card)] border-0 overflow-hidden">
           {/* Chat Header */}
-          <div className="h-20 border-b border-[var(--color-border)] flex items-center justify-between px-8 bg-[var(--color-background)] shrink-0">
+          <div className="h-14 border-b border-[var(--color-border)] flex items-center justify-between px-6 bg-[var(--color-background)] shrink-0">
             <div className="flex items-center gap-4">
               <span className="material-symbols-outlined text-[var(--color-accent)] text-[28px]">
                 psychology
@@ -148,34 +148,33 @@ export const AiChatView: React.FC<AiChatViewProps> = ({
               return (
               <div
                 key={msg.id}
-                className={`flex w-full mb-6 sm:mb-8 ${
+                className={`flex w-full mb-4 sm:mb-6 ${
                   msg.sender === 'user' ? 'justify-end' : 'justify-start'
                 }`}
               >
-                <div className={`flex gap-3 sm:gap-4 max-w-[95%] sm:max-w-[85%] lg:max-w-[75%] ${msg.sender === 'user' ? 'flex-row-reverse' : ''}`}>
+                <div className={`flex gap-3 w-full ${msg.sender === 'user' ? 'flex-row-reverse max-w-[85%]' : 'max-w-full'}`}>
                    {/* Avatar */}
                    <div className="shrink-0 mt-1">
                      {msg.sender === 'user' ? (
-                        <div className="w-10 h-10 flex items-center justify-center bg-[var(--color-accent)] text-[var(--color-background)] rounded-none">
-                          <span className="material-symbols-outlined text-[20px]">person</span>
+                        <div className="w-9 h-9 flex items-center justify-center bg-[var(--color-accent)] text-[var(--color-background)] rounded-none">
+                          <span className="material-symbols-outlined text-[18px]">person</span>
                         </div>
                      ) : (
-                        <div className="w-10 h-10 flex items-center justify-center bg-[var(--color-card)] border border-[var(--color-border)] text-[var(--color-accent)] rounded-none">
-                          <span className="material-symbols-outlined text-[20px]">psychology</span>
+                        <div className="w-9 h-9 flex items-center justify-center bg-[var(--color-card)] border border-[var(--color-border)] text-[var(--color-accent)] rounded-none">
+                          <span className="material-symbols-outlined text-[18px]">psychology</span>
                         </div>
                      )}
                    </div>
                    
                    {/* Bubble Content */}
                    <div 
-                    className={`min-w-0 border rounded-none ${
+                    className={`flex-1 min-w-0 border rounded-none p-4 sm:p-6 ${
                         msg.sender === 'user' 
                           ? 'bg-[var(--color-muted)] border-[var(--color-border)]' 
                           : 'bg-[var(--color-card)] border-[var(--color-border)]'
                       }`}
-                      style={{ padding: `${dynamicPadding}px` }}
                     >
-                      <div className={`flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`flex items-center gap-2 mb-2 sm:mb-3 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
                         <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-muted-foreground)]">
                           {msg.sender === 'user' ? 'You' : 'Clarity AI'}
                         </span>
@@ -212,7 +211,7 @@ export const AiChatView: React.FC<AiChatViewProps> = ({
           </div>
 
           {/* Terminal Input Bar */}
-          <div className="px-2 py-2 bg-[var(--color-background)] border-t border-[var(--color-border)] shrink-0">
+          <div className="px-4 py-3 bg-[var(--color-background)] border-t border-[var(--color-border)] shrink-0">
             <div className="w-full">
               <form onSubmit={handleSubmit} className="relative flex items-start bg-[var(--color-input)] border border-[var(--color-border)] rounded-none focus-within:border-[var(--color-accent)] transition-colors group">
                 <span className="shrink-0 pl-4 pt-3 font-mono font-semibold text-lg text-[var(--color-muted-foreground)] group-focus-within:text-[var(--color-accent)] transition-colors">
