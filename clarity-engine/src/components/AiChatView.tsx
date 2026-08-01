@@ -71,6 +71,9 @@ export const AiChatView: React.FC<AiChatViewProps> = ({
   const [inputText, setInputText] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  
+  // Track message count on mount to prevent history from re-typing
+  const initialMessagesCountRef = useRef(messages.length);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
@@ -141,7 +144,8 @@ export const AiChatView: React.FC<AiChatViewProps> = ({
             </div>
 
             {messages.map((msg, index) => {
-              const isLastAi = index === messages.length - 1 && msg.sender === 'ai';
+              // Only trigger typewriter if it's the last message AND it was added after mounting this chat session
+              const isLastAi = index === messages.length - 1 && msg.sender === 'ai' && index >= initialMessagesCountRef.current;
               // Dynamic padding based on text length: min 16px, max 64px
               const dynamicPadding = Math.min(Math.max(16 + (msg.text.length * 0.05), 16), 64);
               
