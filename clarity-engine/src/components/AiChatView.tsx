@@ -10,7 +10,7 @@ interface AiChatViewProps {
   onClose?: () => void;
 }
 
-const TypewriterMessage: React.FC<{ msg: ChatMessage, isLastAi: boolean, onUpdate?: () => void }> = ({ msg, isLastAi, onUpdate }) => {
+const ChatBubble: React.FC<{ msg: ChatMessage, isLastAi: boolean, onScrollToBottom: () => void }> = ({ msg, isLastAi, onScrollToBottom }) => {
   const [displayedText, setDisplayedText] = useState(isLastAi && msg.sender === 'ai' ? '' : msg.text);
 
   useEffect(() => {
@@ -18,45 +18,104 @@ const TypewriterMessage: React.FC<{ msg: ChatMessage, isLastAi: boolean, onUpdat
       setDisplayedText(msg.text);
       return;
     }
+    
     let i = 0;
+    const textLength = msg.text.length;
+    // Fluid speed step based on content size to keep typing smooth and natural
+    const step = textLength > 1000 ? 4 : textLength > 400 ? 2 : 1;
+    const delay = textLength > 1000 ? 8 : 12;
+
     const interval = setInterval(() => {
-      i += 5; // Fast rate
-      if (i >= msg.text.length) {
+      i += step;
+      if (i >= textLength) {
         setDisplayedText(msg.text);
         clearInterval(interval);
-        if (onUpdate) onUpdate();
+        onScrollToBottom();
       } else {
         setDisplayedText(msg.text.slice(0, i));
-        if (onUpdate) onUpdate();
+        onScrollToBottom();
       }
-    }, 15);
+    }, delay);
+
     return () => clearInterval(interval);
   }, [msg.text, isLastAi, msg.sender]);
 
+  // Sync padding to the CURRENTLY typed out length of the text!
+  const currentLength = displayedText.length;
+  const paddingTop = Math.min(Math.max(8 + (currentLength * 0.015), 8), 16);
+  const paddingBottom = Math.min(Math.max(8 + (currentLength * 0.015), 8), 16);
+  const paddingLeft = Math.min(Math.max(12 + (currentLength * 0.02), 12), 20);
+  const paddingRight = Math.min(Math.max(12 + (currentLength * 0.02), 12), 20);
+
   return (
-    <div className="prose-like max-w-none">
-      <ReactMarkdown
-        components={{
-          p: ({node, ...props}) => <p className="mb-6 last:mb-0 leading-loose" {...props} />,
-          strong: ({node, ...props}) => <strong className="font-bold text-[var(--color-accent)]" {...props} />,
-          ul: ({node, ...props}) => <ul className="list-disc pl-6 mb-6 space-y-3 marker:text-[var(--color-accent)]" {...props} />,
-          ol: ({node, ...props}) => <ol className="list-decimal pl-6 mb-6 space-y-3 marker:text-[var(--color-accent)] font-mono text-sm" {...props} />,
-          li: ({node, ...props}) => <li className="" {...props} />,
-          h1: ({node, ...props}) => <h1 className="font-display text-2xl font-bold mb-6 mt-8 text-[var(--color-foreground)] tracking-wide" {...props} />,
-          h2: ({node, ...props}) => <h2 className="font-display text-xl font-bold mb-4 mt-8 text-[var(--color-foreground)] tracking-wide border-b border-[var(--color-border)] pb-3" {...props} />,
-          h3: ({node, ...props}) => <h3 className="font-mono text-sm font-bold mb-3 mt-6 text-[var(--color-accent)] uppercase tracking-widest" {...props} />,
-          pre: ({node, ...props}) => (
-            <div className="bg-[#0A0A0B] border border-[var(--color-border)] p-6 font-mono text-sm overflow-x-auto my-6 rounded-none shadow-inner">
-              <pre {...props} />
+    <div className={`flex w-full mb-4 sm:mb-6 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+      <div className={`flex gap-3 w-full ${msg.sender === 'user' ? 'flex-row-reverse max-w-[85%]' : 'max-w-full'}`}>
+        {/* Avatar */}
+        <div className="shrink-0 mt-1">
+          {msg.sender === 'user' ? (
+            <div className="w-9 h-9 flex items-center justify-center bg-[var(--color-accent)] text-[var(--color-background)] rounded-none">
+              <span className="material-symbols-outlined text-[18px]">person</span>
             </div>
-          ),
-          code: ({node, className, children, ...props}: any) => (
-            <code className={`font-mono text-[13px] bg-[var(--color-input)] border border-[var(--color-border)] px-1.5 py-0.5 ${className || ''}`} {...props}>{children}</code>
-          )
-        }}
-      >
-        {displayedText}
-      </ReactMarkdown>
+          ) : (
+            <div className="w-9 h-9 flex items-center justify-center bg-[var(--color-card)] border border-[var(--color-border)] text-[var(--color-accent)] rounded-none">
+              <span className="material-symbols-outlined text-[18px]">psychology</span>
+            </div>
+          )}
+        </div>
+        
+        {/* Bubble Content */}
+        <div 
+          className={`min-w-0 border rounded-none w-fit max-w-full transition-all duration-100 ${
+            msg.sender === 'user' 
+              ? 'bg-[var(--color-muted)] border-[var(--color-border)]' 
+              : 'bg-[var(--color-card)] border-[var(--color-border)]'
+          }`}
+          style={{ paddingTop, paddingBottom, paddingLeft, paddingRight }}
+        >
+          <div className={`flex items-center gap-2 mb-1.5 sm:mb-2.5 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+            <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-muted-foreground)]">
+              {msg.sender === 'user' ? 'You' : 'Clarity AI'}
+            </span>
+          </div>
+          
+          <div className="text-sm md:text-base font-sans text-[var(--color-foreground)] leading-loose">
+            {msg.sender === 'user' ? (
+              <p className="whitespace-pre-wrap leading-relaxed">{displayedText}</p>
+            ) : (
+              <div className="prose-like max-w-none">
+                <ReactMarkdown
+                  components={{
+                    p: ({node, ...props}) => <p className="mb-6 last:mb-0 leading-loose" {...props} />,
+                    strong: ({node, ...props}) => <strong className="font-bold text-[var(--color-accent)]" {...props} />,
+                    ul: ({node, ...props}) => <ul className="list-disc pl-6 mb-6 space-y-3 marker:text-[var(--color-accent)]" {...props} />,
+                    ol: ({node, ...props}) => <ol className="list-decimal pl-6 mb-6 space-y-3 marker:text-[var(--color-accent)] font-mono text-sm" {...props} />,
+                    li: ({node, ...props}) => <li className="" {...props} />,
+                    h1: ({node, ...props}) => <h1 className="font-display text-2xl font-bold mb-6 mt-8 text-[var(--color-foreground)] tracking-wide" {...props} />,
+                    h2: ({node, ...props}) => <h2 className="font-display text-xl font-bold mb-4 mt-8 text-[var(--color-foreground)] tracking-wide border-b border-[var(--color-border)] pb-3" {...props} />,
+                    h3: ({node, ...props}) => <h3 className="font-mono text-sm font-bold mb-3 mt-6 text-[var(--color-accent)] uppercase tracking-widest" {...props} />,
+                    pre: ({node, ...props}) => (
+                      <div className="bg-[#0A0A0B] border border-[var(--color-border)] p-6 font-mono text-sm overflow-x-auto my-6 rounded-none shadow-inner">
+                        <pre {...props} />
+                      </div>
+                    ),
+                    code: ({node, className, children, ...props}: any) => (
+                      <code className={`font-mono text-[13px] bg-[var(--color-input)] border border-[var(--color-border)] px-1.5 py-0.5 ${className || ''}`} {...props}>{children}</code>
+                    )
+                  }}
+                >
+                  {displayedText}
+                </ReactMarkdown>
+              </div>
+            )}
+
+            {msg.codeSnippet && (
+              <div className="bg-[#0A0A0B] border border-[var(--color-border)] p-6 font-mono text-sm overflow-x-auto mt-8 shadow-inner">
+                <pre><code>{msg.codeSnippet}</code></pre>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
@@ -144,69 +203,16 @@ export const AiChatView: React.FC<AiChatViewProps> = ({
             </div>
 
             {messages.map((msg, index) => {
-              // Only trigger typewriter if it's the last message AND it was added after mounting this chat session
               const isLastAi = index === messages.length - 1 && msg.sender === 'ai' && index >= initialMessagesCountRef.current;
-              // Dynamic padding based on text length: min 16px, max 64px
-              const dynamicPadding = Math.min(Math.max(16 + (msg.text.length * 0.05), 16), 64);
-              
               return (
-              <div
-                key={msg.id}
-                className={`flex w-full mb-4 sm:mb-6 ${
-                  msg.sender === 'user' ? 'justify-end' : 'justify-start'
-                }`}
-              >
-                <div className={`flex gap-3 w-full ${msg.sender === 'user' ? 'flex-row-reverse max-w-[85%]' : 'max-w-full'}`}>
-                   {/* Avatar */}
-                   <div className="shrink-0 mt-1">
-                     {msg.sender === 'user' ? (
-                        <div className="w-9 h-9 flex items-center justify-center bg-[var(--color-accent)] text-[var(--color-background)] rounded-none">
-                          <span className="material-symbols-outlined text-[18px]">person</span>
-                        </div>
-                     ) : (
-                        <div className="w-9 h-9 flex items-center justify-center bg-[var(--color-card)] border border-[var(--color-border)] text-[var(--color-accent)] rounded-none">
-                          <span className="material-symbols-outlined text-[18px]">psychology</span>
-                        </div>
-                     )}
-                   </div>
-                   
-                   {/* Bubble Content */}
-                   <div 
-                    className={`min-w-0 border rounded-none w-fit max-w-full ${
-                        msg.sender === 'user' 
-                          ? 'bg-[var(--color-muted)] border-[var(--color-border)]' 
-                          : 'bg-[var(--color-card)] border-[var(--color-border)]'
-                      }`}
-                      style={{ 
-                        paddingTop: `${Math.min(Math.max(8 + (msg.text.length * 0.01), 8), 20)}px`,
-                        paddingBottom: `${Math.min(Math.max(8 + (msg.text.length * 0.01), 8), 20)}px`,
-                        paddingLeft: `${Math.min(Math.max(12 + (msg.text.length * 0.015), 12), 24)}px`,
-                        paddingRight: `${Math.min(Math.max(12 + (msg.text.length * 0.015), 12), 24)}px`
-                      }}
-                    >
-                      <div className={`flex items-center gap-2 mb-2 sm:mb-3 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                        <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-muted-foreground)]">
-                          {msg.sender === 'user' ? 'You' : 'Clarity AI'}
-                        </span>
-                      </div>
-                      
-                      <div className="text-sm md:text-base font-sans text-[var(--color-foreground)] leading-loose">
-                        {msg.sender === 'user' ? (
-                          <p className="whitespace-pre-wrap leading-relaxed">{msg.text}</p>
-                        ) : (
-                          <TypewriterMessage msg={msg} isLastAi={isLastAi} onUpdate={scrollToBottom} />
-                        )}
-
-                        {msg.codeSnippet && (
-                          <div className="bg-[#0A0A0B] border border-[var(--color-border)] p-6 font-mono text-sm overflow-x-auto mt-8 shadow-inner">
-                            <pre><code>{msg.codeSnippet}</code></pre>
-                          </div>
-                        )}
-                      </div>
-                   </div>
-                </div>
-              </div>
-            )})}
+                <ChatBubble 
+                  key={msg.id} 
+                  msg={msg} 
+                  isLastAi={isLastAi} 
+                  onScrollToBottom={scrollToBottom} 
+                />
+              );
+            })}
 
             {isGenerating && (
               <div className="flex justify-start">
