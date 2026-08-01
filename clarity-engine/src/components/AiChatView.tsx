@@ -95,7 +95,7 @@ export const AiChatView: React.FC<AiChatViewProps> = ({
       setInputText('');
       // Reset height after send
       setTimeout(() => {
-        if (textareaRef.current) textareaRef.current.style.height = '56px';
+        if (textareaRef.current) textareaRef.current.style.height = '40px';
       }, 0);
     }
   };
@@ -211,10 +211,10 @@ export const AiChatView: React.FC<AiChatViewProps> = ({
           </div>
 
           {/* Terminal Input Bar */}
-          <div className="px-4 py-3 bg-[var(--color-background)] border-t border-[var(--color-border)] shrink-0">
+          <div className="px-4 py-2 bg-[var(--color-background)] border-t border-[var(--color-border)] shrink-0">
             <div className="w-full">
               <form onSubmit={handleSubmit} className="relative flex items-start bg-[var(--color-input)] border border-[var(--color-border)] rounded-none focus-within:border-[var(--color-accent)] transition-colors group">
-                <span className="shrink-0 pl-4 pt-3 font-mono font-semibold text-lg text-[var(--color-muted-foreground)] group-focus-within:text-[var(--color-accent)] transition-colors">
+                <span className="shrink-0 pl-4 pt-2 font-mono font-semibold text-lg text-[var(--color-muted-foreground)] group-focus-within:text-[var(--color-accent)] transition-colors">
                   &gt;
                 </span>
                 <textarea
@@ -224,8 +224,8 @@ export const AiChatView: React.FC<AiChatViewProps> = ({
                   onChange={(e) => { setInputText(e.target.value); autoResize(); }}
                   onKeyDown={handleKeyDown}
                   placeholder="Ask Clarity about this codebase..."
-                  style={{ height: '48px', resize: 'none', overflowY: 'auto' }}
-                  className="w-full bg-transparent border-none focus:ring-0 font-sans text-sm text-[var(--color-foreground)] placeholder:text-[var(--color-muted-foreground)] pl-3 pr-16 py-3 focus:outline-none leading-relaxed"
+                  style={{ height: '40px', resize: 'none', overflowY: 'auto' }}
+                  className="w-full bg-transparent border-none focus:ring-0 font-sans text-sm text-[var(--color-foreground)] placeholder:text-[var(--color-muted-foreground)] pl-3 pr-16 py-2.5 focus:outline-none leading-relaxed"
                 />
                 <button
                   type="submit"
