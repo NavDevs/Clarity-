@@ -136,19 +136,35 @@ export const AiChatView: React.FC<AiChatViewProps> = ({
   // Track message count on mount to prevent history from re-typing
   const initialMessagesCountRef = useRef(messages.length);
 
-  const scrollToBottom = (force = false) => {
-    if (chatContainerRef.current) {
-      const { scrollHeight, scrollTop, clientHeight } = chatContainerRef.current;
-      const isNearBottom = scrollHeight - scrollTop - clientHeight < 150;
-      if (!isNearBottom && !force) {
-        return; // User has scrolled up, don't auto-scroll and interrupt them
-      }
+  const autoScrollEnabled = useRef(true);
+  const lastScrollTop = useRef(0);
+
+  const handleScroll = () => {
+    if (!chatContainerRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
+    
+    if (scrollTop < lastScrollTop.current) {
+      // User scrolled up manually
+      autoScrollEnabled.current = false;
     }
-    messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+    
+    if (scrollHeight - scrollTop - clientHeight < 10) {
+      // User reached the bottom
+      autoScrollEnabled.current = true;
+    }
+    
+    lastScrollTop.current = scrollTop;
+  };
+
+  const scrollToBottom = (force = false) => {
+    if (force || autoScrollEnabled.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: force ? 'smooth' : 'auto' });
+    }
   };
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    autoScrollEnabled.current = true;
+    scrollToBottom(true);
   }, [messages, isGenerating]);
 
   // Auto-resize textarea as content grows
@@ -204,7 +220,11 @@ export const AiChatView: React.FC<AiChatViewProps> = ({
           </div>
 
           {/* Chat Messages History */}
-          <div ref={chatContainerRef} className="flex-1 overflow-y-auto chat-scroll p-4 sm:p-8 space-y-6 sm:space-y-8 bg-[var(--color-background)]">
+          <div 
+            ref={chatContainerRef} 
+            onScroll={handleScroll}
+            className="flex-1 overflow-y-auto chat-scroll p-4 sm:p-8 space-y-6 sm:space-y-8 bg-[var(--color-background)]"
+          >
             <div className="flex justify-center">
               <span className="font-mono font-semibold text-[10px] text-[var(--color-muted-foreground)] uppercase tracking-widest px-4 py-1 border border-[var(--color-border)] bg-[var(--color-muted)]">
                 Today
