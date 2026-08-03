@@ -131,11 +131,19 @@ export const AiChatView: React.FC<AiChatViewProps> = ({
   const [inputText, setInputText] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
   
   // Track message count on mount to prevent history from re-typing
   const initialMessagesCountRef = useRef(messages.length);
 
-  const scrollToBottom = () => {
+  const scrollToBottom = (force = false) => {
+    if (chatContainerRef.current) {
+      const { scrollHeight, scrollTop, clientHeight } = chatContainerRef.current;
+      const isNearBottom = scrollHeight - scrollTop - clientHeight < 150;
+      if (!isNearBottom && !force) {
+        return; // User has scrolled up, don't auto-scroll and interrupt them
+      }
+    }
     messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
   };
 
@@ -196,7 +204,7 @@ export const AiChatView: React.FC<AiChatViewProps> = ({
           </div>
 
           {/* Chat Messages History */}
-          <div className="flex-1 overflow-y-auto chat-scroll p-4 sm:p-8 space-y-6 sm:space-y-8 bg-[var(--color-background)]">
+          <div ref={chatContainerRef} className="flex-1 overflow-y-auto chat-scroll p-4 sm:p-8 space-y-6 sm:space-y-8 bg-[var(--color-background)]">
             <div className="flex justify-center">
               <span className="font-mono font-semibold text-[10px] text-[var(--color-muted-foreground)] uppercase tracking-widest px-4 py-1 border border-[var(--color-border)] bg-[var(--color-muted)]">
                 Today
