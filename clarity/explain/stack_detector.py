@@ -15,7 +15,8 @@ def detect_stack(repo_path: Path, pipeline_data: Dict[str, List[str]] = None) ->
         "infra": [],
         "tools": [],
         "ai": [],
-        "validation": []
+        "validation": [],
+        "mobile": []
     }
     
     dependencies = []
@@ -79,9 +80,52 @@ def detect_stack(repo_path: Path, pipeline_data: Dict[str, List[str]] = None) ->
     if (repo_path / "Dockerfile").exists() or (repo_path / "docker-compose.yml").exists():
         stack["infra"].append("Docker")
         
-    # Java
-    if (repo_path / "pom.xml").exists() or (repo_path / "build.gradle").exists():
+    # Java / Android
+    if (repo_path / "pom.xml").exists():
         stack["backend"].append("Java")
+        
+    if (repo_path / "build.gradle").exists() or (repo_path / "build.gradle.kts").exists() or (repo_path / "settings.gradle").exists() or (repo_path / "android").exists():
+        stack["mobile"].append("Android")
+        try:
+            bg_path = repo_path / "build.gradle"
+            if bg_path.exists():
+                content = bg_path.read_text(encoding="utf-8")
+                for match in re.finditer(r'implementation\s+[\'"]([^\'"]+)[\'"]', content):
+                    pkg = match.group(1).split(':')[-2] if ':' in match.group(1) else match.group(1)
+                    dependencies.append(pkg.lower())
+        except Exception:
+            pass
+            
+    # iOS
+    if (repo_path / "Podfile").exists() or (repo_path / "Package.swift").exists() or (repo_path / "ios").exists():
+        stack["mobile"].append("iOS")
+        if (repo_path / "Podfile").exists():
+            try:
+                content = (repo_path / "Podfile").read_text(encoding="utf-8")
+                for match in re.finditer(r'pod\s+[\'"]([^\'"]+)[\'"]', content):
+                    dependencies.append(match.group(1).lower())
+            except Exception:
+                pass
+                
+    # Flutter
+    pubspec = repo_path / "pubspec.yaml"
+    if pubspec.exists():
+        stack["mobile"].append("Flutter")
+        stack["mobile"].append("Dart")
+        try:
+            content = pubspec.read_text(encoding="utf-8")
+            in_deps = False
+            for line in content.splitlines():
+                if line.startswith("dependencies:"):
+                    in_deps = True
+                    continue
+                elif line.startswith("dev_dependencies:") or (line and not line.startswith(" ") and not line.startswith("#")):
+                    in_deps = False
+                if in_deps and line.strip() and not line.strip().startswith("#"):
+                    pkg = line.split(":")[0].strip()
+                    dependencies.append(pkg.lower())
+        except Exception:
+            pass
         
     # Map dependencies to categories
     for dep in dependencies:
@@ -104,6 +148,9 @@ def detect_stack(repo_path: Path, pipeline_data: Dict[str, List[str]] = None) ->
             
         if dep in ("redis", "celery", "rabbitmq", "kafka", "cors", "dotenv", "helmet", "morgan", "nodemon"):
             if dep.capitalize() not in stack["infra"]: stack["infra"].append(dep.capitalize())
+            
+        if dep in ("react-native", "expo", "flutter", "alamofire", "kingfisher", "retrofit", "glide", "room", "xamarin", "ionic", "capacitor", "cordova"):
+            if dep.capitalize() not in stack["mobile"]: stack["mobile"].append(dep.capitalize())
             
         # Catch-all for unmapped dependencies so they appear in the Tech Stack
         mapped = False

@@ -50,14 +50,31 @@ def trace_pipeline(repo_path: Path) -> Dict[str, List[str]]:
         if imports:
             call_graph[file_path.relative_to(repo_path).as_posix()] = list(imports)
 
+    def process_mobile(file_path: Path):
+        try:
+            content = file_path.read_text(encoding="utf-8")
+        except Exception:
+            return
+            
+        imports = set()
+        for match in re.finditer(r"import\s+['\"]?([a-zA-Z0-9_\.\:]+)['\"]?", content):
+            pkg = match.group(1).split('.')[0].split(':')[0]
+            if pkg.lower() not in ('java', 'javax', 'kotlin', 'dart', 'swift', 'foundation', 'uikit', 'package'):
+                imports.add(pkg)
+                
+        if imports:
+            call_graph[file_path.relative_to(repo_path).as_posix()] = list(imports)
+
     for file_path in repo_path.rglob("*"):
-        if "venv" in file_path.parts or ".git" in file_path.parts or "node_modules" in file_path.parts:
+        if "venv" in file_path.parts or ".git" in file_path.parts or "node_modules" in file_path.parts or "build" in file_path.parts:
             continue
             
         if file_path.suffix == ".py" and file_path.name in ("main.py", "app.py", "cli.py", "__init__.py"):
             process_python(file_path)
         elif file_path.suffix in (".js", ".ts", ".jsx", ".tsx") and file_path.name in ("index.js", "server.js", "app.js", "main.js", "index.ts", "server.ts", "app.ts", "main.ts", "route.ts", "route.js", "page.tsx", "page.jsx", "layout.tsx", "layout.jsx", "middleware.ts", "middleware.js"):
             process_node(file_path)
+        elif file_path.suffix in (".dart", ".swift", ".kt", ".java") and file_path.name.lower() in ("main.dart", "appdelegate.swift", "mainactivity.kt", "mainactivity.java", "app.swift"):
+            process_mobile(file_path)
                  
     return call_graph
 

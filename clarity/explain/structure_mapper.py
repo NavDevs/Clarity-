@@ -24,7 +24,12 @@ def classify_folders(repo_path: Path) -> Dict[str, Any]:
         "controllers": "Controllers",
         "models": "Data Models",
         "views": "Views",
-        "config": "Configuration"
+        "config": "Configuration",
+        "android": "Android Project",
+        "ios": "iOS Project",
+        "lib": "Dart Library (Flutter)",
+        "res": "Resources",
+        "assets": "Assets"
     }
     
     exclude_dirs = {".git", "venv", "__pycache__", "node_modules", "dist", "build"}
@@ -65,13 +70,15 @@ def get_file_role(filepath: str) -> str:
     name = filename.lower()
     
     # Handle external modules / packages that are common
-    if name in ("react", "next", "vue", "angular", "svelte", "express", "fastapi", "django", "flask"):
+    if name in ("react", "next", "vue", "angular", "svelte", "express", "fastapi", "django", "flask", "flutter", "react-native"):
         return f"{name.title()} Framework"
     if name in (".", "..", "@"):
         return "Internal Module"
         
-    if name in ("main.py", "app.py", "server.py", "core.py", "index.js", "app.js", "server.js", "main.ts", "index.ts", "server.ts", "app.ts", "page.tsx", "page.jsx", "layout.tsx", "layout.jsx", "middleware.ts", "middleware.js"):
+    if name in ("main.py", "app.py", "server.py", "core.py", "index.js", "app.js", "server.js", "main.ts", "index.ts", "server.ts", "app.ts", "page.tsx", "page.jsx", "layout.tsx", "layout.jsx", "middleware.ts", "middleware.js", "main.dart", "appdelegate.swift", "mainactivity.kt", "mainactivity.java"):
         return "Core Application"
+    if name in ("info.plist", "androidmanifest.xml", "pubspec.yaml", "build.gradle", "build.gradle.kts", "podfile", "package.swift", "app.json"):
+        return "App Manifest & Config"
     if name in ("cli.py", "manage.py", "console.py", "runner.py", "cli.js", "bin/www"):
         return "CLI Entry Point"
     if name in ("models.py", "db.py", "database.py", "repository.py", "crud.py", "db.js", "database.js"):
