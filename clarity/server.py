@@ -28,7 +28,7 @@ from clarity.explain.fetcher import fetch_repo, cleanup_repo
 from clarity.explain.stack_detector import detect_stack
 from clarity.explain.structure_mapper import classify_folders
 from clarity.explain.pipeline_tracer import trace_pipeline
-from clarity.explain.summarizer import generate_summary, answer_question
+from clarity.explain.summarizer import generate_summary, answer_question, generate_tech_brief
 from clarity.explain.diagram_gen import generate_diagram_data
 from clarity.audit.checker import check_env_vars
 from clarity.audit.scanner import scan_directory
@@ -51,10 +51,14 @@ class AnalyzeRequest(BaseModel):
     repo_url: str
 
 class ChatRequest(BaseModel):
-    question: str
     context: dict
-    history: list = []
-    scan_id: int | None = None
+    question: str
+    history: list = None
+    scan_id: int = None
+
+class TechBriefRequest(BaseModel):
+    tech_name: str
+    context: dict = None
 
 class AuthRequest(BaseModel):
     username: str
@@ -265,6 +269,14 @@ async def chat_repo(req: ChatRequest, db: Session = Depends(get_db), current_use
                     pass
         
         return {"answer": answer}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/tech-brief")
+async def tech_brief(req: TechBriefRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_optional)):
+    try:
+        brief = generate_tech_brief(req.tech_name, req.context)
+        return {"brief": brief}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

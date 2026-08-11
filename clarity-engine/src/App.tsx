@@ -255,7 +255,8 @@ export default function App() {
         nodes: reactNodes.length ? reactNodes : initialScan.nodes,
         edges: data.explain.diagram?.edges || [],
         findings: reactFindings.length ? reactFindings : initialScan.findings,
-        techStack: reactStack.length ? reactStack : initialScan.techStack
+        techStack: reactStack.length ? reactStack : initialScan.techStack,
+        context: data.explain?.context
       };
 
       setActiveScan(updatedScan);
@@ -471,7 +472,8 @@ export default function App() {
                       nodes: reactNodes.length ? reactNodes : initialScan.nodes,
                       edges: rawEdges,
                       findings: reactFindings.length ? reactFindings : [],
-                      techStack: reactStack.length ? reactStack : []
+                      techStack: reactStack.length ? reactStack : [],
+                      context: data.explain?.context
                     };
 
                     if (data.explain?.context) {
@@ -531,6 +533,8 @@ export default function App() {
               <motion.div key="techstack" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }} className="flex-1 flex flex-col relative overflow-hidden">
                 <TechStackView
                   stackItems={activeScan.techStack}
+                  repoContext={activeScan.context}
+                  onUpdateStackItem={(id) => console.log('Update', id)}
                 />
               </motion.div>
             )}

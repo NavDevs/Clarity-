@@ -79,4 +79,5 @@ export interface RepositoryScan {
   edges: ArchitectureEdge[];
   findings: SecurityFinding[];
   techStack: TechStackItem[];
+  context?: any;
 }

@@ -173,3 +173,45 @@ def answer_question(context_data: dict, question: str, history: list = None) -> 
         return f"Sorry, I encountered an API error: {e}"
     except Exception as e:
         return f"Sorry, I encountered an error answering that: {str(e)}"
+
+
+def generate_tech_brief(tech_name: str, context_data: dict) -> str:
+    """
+    Generates a short interview brief for a specific tech stack item using Groq AI.
+    """
+    api_key = os.environ.get("GROQ_API_KEY")
+    if not api_key:
+        return "Brief unavailable: GROQ_API_KEY not set. Please add a valid API key."
+        
+    cache_key = _cache_key("tech_brief", tech_name, context_data)
+    cached = _get_cached(cache_key)
+    if cached:
+        return cached
+        
+    client = Groq(api_key=api_key)
+    
+    prompt = f"""
+    You are an expert technical interviewer. I need an interview brief for the technology: {tech_name}.
+    Context of the repository it was found in:
+    {json.dumps(context_data, indent=2)}
+    
+    Provide a concise, 3-section brief using markdown:
+    ### Primary Use Case
+    Explain exactly what problem {tech_name} solves generally. 
+    Then, state exactly how it is used in the repository context provided.
+    **CRITICAL**: If the exact implementation details of {tech_name} are NOT in the context, DO NOT GUESS OR INFER. State clearly that the exact usage is not present in the parsed context.
+    
+    ### Trade-offs
+    Discuss why this technology might have been chosen over its popular alternatives.
+    
+    ### Integration
+    Look at how this dependency interacts with the rest of the application's stack based on the context. If not clear, explain standard integrations.
+    
+    Do not add extra conversational text.
+    """
+    try:
+        result = _call_groq(client, [{"role": "user", "content": prompt}])
+        _set_cache(cache_key, result)
+        return result
+    except Exception as e:
+        return f"Brief unavailable due to API error: {str(e)}"
