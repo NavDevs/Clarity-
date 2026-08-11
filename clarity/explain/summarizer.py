@@ -195,17 +195,12 @@ def generate_tech_brief(tech_name: str, context_data: dict) -> str:
     Context of the repository it was found in:
     {json.dumps(context_data, indent=2)}
     
-    Provide a concise, 3-section brief using markdown:
-    ### Primary Use Case
-    Explain exactly what problem {tech_name} solves generally. 
-    Then, state exactly how it is used in the repository context provided.
-    **CRITICAL**: If the exact implementation details of {tech_name} are NOT in the context, DO NOT GUESS OR INFER. State clearly that the exact usage is not present in the parsed context.
-    
-    ### Trade-offs
-    Discuss why this technology might have been chosen over its popular alternatives.
-    
-    ### Integration
-    Look at how this dependency interacts with the rest of the application's stack based on the context. If not clear, explain standard integrations.
+    Provide a very brief, easy-to-understand explanation using markdown.
+    **CRITICAL RULES:**
+    1. The ENTIRE response MUST be exactly 2 to 3 short bullet points. Do not write paragraphs.
+    2. Do NOT use section headers (like ### Primary Use Case).
+    3. Focus on what it is, why it was chosen (trade-offs), and how it is used here.
+    4. If the exact implementation details of {tech_name} are NOT in the context, DO NOT GUESS OR INFER. Just state its standard use case.
     
     Do not add extra conversational text.
     """
