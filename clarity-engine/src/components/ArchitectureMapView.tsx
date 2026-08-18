@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { ArchitectureNode, ArchitectureEdge, ViewMode } from '../types';
 
 export const ArchitectureMapView: React.FC<ArchitectureMapViewProps> = ({
@@ -565,6 +566,7 @@ export const ArchitectureMapView: React.FC<ArchitectureMapViewProps> = ({
             <div className="text-sm text-[var(--color-foreground)]/90 leading-relaxed bg-[var(--color-card)] p-5 border border-[var(--color-border)] font-sans">
               <div className="prose-like max-w-none">
                 <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
                   components={{
                     p: ({node, ...props}) => <p className="mb-4 last:mb-0 leading-relaxed" {...props} />,
                     strong: ({node, ...props}) => <strong className="font-bold text-[var(--color-foreground)]" {...props} />,
@@ -581,7 +583,10 @@ export const ArchitectureMapView: React.FC<ArchitectureMapViewProps> = ({
                     ),
                     code: ({node, className, children, ...props}: any) => (
                       <code className={`font-mono text-[11px] bg-[var(--color-input)] border border-[var(--color-border)] px-1 py-0.5 ${className || ''}`} {...props}>{children}</code>
-                    )
+                    ),
+                    table: ({node, ...props}) => <div className="overflow-x-auto my-6"><table className="w-full text-left border-collapse border border-[var(--color-border)] text-sm" {...props} /></div>,
+                    th: ({node, ...props}) => <th className="border border-[var(--color-border)] bg-[#0A0A0B] px-4 py-2 font-mono text-xs font-bold text-[var(--color-accent)] uppercase tracking-wider" {...props} />,
+                    td: ({node, ...props}) => <td className="border border-[var(--color-border)] px-4 py-2 leading-relaxed" {...props} />
                   }}
                 >
                   {aiSummary}

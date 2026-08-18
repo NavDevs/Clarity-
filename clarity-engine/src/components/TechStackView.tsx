@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { motion, AnimatePresence } from 'motion/react';
 import { TechStackItem } from '../types';
 
@@ -144,6 +145,7 @@ export const TechStackView: React.FC<TechStackViewProps> = ({
                             </div>
                           ) : (
                             <ReactMarkdown
+                              remarkPlugins={[remarkGfm]}
                               components={{
                                 p: ({node, ...props}) => <p className="mb-6 last:mb-0 leading-loose" {...props} />,
                                 strong: ({node, ...props}) => <strong className="font-bold text-[var(--color-foreground)]" {...props} />,
@@ -157,7 +159,10 @@ export const TechStackView: React.FC<TechStackViewProps> = ({
                                 ),
                                 code: ({node, className, children, ...props}: any) => (
                                   <code className={`font-mono text-[11px] bg-[var(--color-card)] border border-[var(--color-border)] px-1 py-0.5 ${className || ''}`} {...props}>{children}</code>
-                                )
+                                ),
+                                table: ({node, ...props}) => <div className="overflow-x-auto my-6"><table className="w-full text-left border-collapse border border-[var(--color-border)] text-sm" {...props} /></div>,
+                                th: ({node, ...props}) => <th className="border border-[var(--color-border)] bg-[#0A0A0B] px-4 py-2 font-mono text-[11px] font-bold text-[var(--color-accent)] uppercase tracking-wider" {...props} />,
+                                td: ({node, ...props}) => <td className="border border-[var(--color-border)] px-4 py-2 leading-relaxed" {...props} />
                               }}
                             >
                               {briefs[item.id] || "Brief unavailable."}
