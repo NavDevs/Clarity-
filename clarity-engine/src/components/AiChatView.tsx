@@ -12,6 +12,28 @@ interface AiChatViewProps {
   onClose?: () => void;
 }
 
+const markdownComponents = {
+  p: ({node, ...props}: any) => <p className="mb-6 last:mb-0 leading-loose" {...props} />,
+  strong: ({node, ...props}: any) => <strong className="font-bold text-[var(--color-accent)]" {...props} />,
+  ul: ({node, ...props}: any) => <ul className="list-disc pl-6 mb-6 space-y-3 marker:text-[var(--color-accent)]" {...props} />,
+  ol: ({node, ...props}: any) => <ol className="list-decimal pl-6 mb-6 space-y-3 marker:text-[var(--color-accent)] font-mono text-sm" {...props} />,
+  li: ({node, ...props}: any) => <li className="" {...props} />,
+  h1: ({node, ...props}: any) => <h1 className="font-display text-2xl font-bold mb-6 mt-8 text-[var(--color-foreground)] tracking-wide" {...props} />,
+  h2: ({node, ...props}: any) => <h2 className="font-display text-xl font-bold mb-4 mt-8 text-[var(--color-foreground)] tracking-wide border-b border-[var(--color-border)] pb-3" {...props} />,
+  h3: ({node, ...props}: any) => <h3 className="font-mono text-sm font-bold mb-3 mt-6 text-[var(--color-accent)] uppercase tracking-widest" {...props} />,
+  pre: ({node, ...props}: any) => (
+    <div className="bg-[#0A0A0B] border border-[var(--color-border)] p-6 font-mono text-sm overflow-x-auto my-6 rounded-none shadow-inner">
+      <pre {...props} />
+    </div>
+  ),
+  code: ({node, className, children, ...props}: any) => (
+    <code className={`font-mono text-[13px] bg-[var(--color-input)] border border-[var(--color-border)] px-1.5 py-0.5 ${className || ''}`} {...props}>{children}</code>
+  ),
+  table: ({node, ...props}: any) => <div className="overflow-x-auto my-6"><table className="w-full text-left border-collapse border border-[var(--color-border)] text-sm" {...props} /></div>,
+  th: ({node, ...props}: any) => <th className="border border-[var(--color-border)] bg-[#0A0A0B] px-4 py-2 font-mono text-xs font-bold text-[var(--color-accent)] uppercase tracking-wider" {...props} />,
+  td: ({node, ...props}: any) => <td className="border border-[var(--color-border)] px-4 py-2 leading-relaxed" {...props} />
+};
+
 const ChatBubble: React.FC<{ msg: ChatMessage, isLastAi: boolean, onScrollToBottom: () => void }> = ({ msg, isLastAi, onScrollToBottom }) => {
   const [displayedText, setDisplayedText] = useState(isLastAi && msg.sender === 'ai' ? '' : msg.text);
 
@@ -82,38 +104,14 @@ const ChatBubble: React.FC<{ msg: ChatMessage, isLastAi: boolean, onScrollToBott
           </div>
           
           <div className="text-sm md:text-base font-sans text-[var(--color-foreground)] leading-loose">
-            {msg.sender === 'user' ? (
-              <p className="whitespace-pre-wrap leading-relaxed">{displayedText}</p>
-            ) : (
-              <div className="prose-like max-w-none">
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
-                  components={{
-                    p: ({node, ...props}) => <p className="mb-6 last:mb-0 leading-loose" {...props} />,
-                    strong: ({node, ...props}) => <strong className="font-bold text-[var(--color-accent)]" {...props} />,
-                    ul: ({node, ...props}) => <ul className="list-disc pl-6 mb-6 space-y-3 marker:text-[var(--color-accent)]" {...props} />,
-                    ol: ({node, ...props}) => <ol className="list-decimal pl-6 mb-6 space-y-3 marker:text-[var(--color-accent)] font-mono text-sm" {...props} />,
-                    li: ({node, ...props}) => <li className="" {...props} />,
-                    h1: ({node, ...props}) => <h1 className="font-display text-2xl font-bold mb-6 mt-8 text-[var(--color-foreground)] tracking-wide" {...props} />,
-                    h2: ({node, ...props}) => <h2 className="font-display text-xl font-bold mb-4 mt-8 text-[var(--color-foreground)] tracking-wide border-b border-[var(--color-border)] pb-3" {...props} />,
-                    h3: ({node, ...props}) => <h3 className="font-mono text-sm font-bold mb-3 mt-6 text-[var(--color-accent)] uppercase tracking-widest" {...props} />,
-                    pre: ({node, ...props}) => (
-                      <div className="bg-[#0A0A0B] border border-[var(--color-border)] p-6 font-mono text-sm overflow-x-auto my-6 rounded-none shadow-inner">
-                        <pre {...props} />
-                      </div>
-                    ),
-                    code: ({node, className, children, ...props}: any) => (
-                      <code className={`font-mono text-[13px] bg-[var(--color-input)] border border-[var(--color-border)] px-1.5 py-0.5 ${className || ''}`} {...props}>{children}</code>
-                    ),
-                    table: ({node, ...props}) => <div className="overflow-x-auto my-6"><table className="w-full text-left border-collapse border border-[var(--color-border)] text-sm" {...props} /></div>,
-                    th: ({node, ...props}) => <th className="border border-[var(--color-border)] bg-[#0A0A0B] px-4 py-2 font-mono text-xs font-bold text-[var(--color-accent)] uppercase tracking-wider" {...props} />,
-                    td: ({node, ...props}) => <td className="border border-[var(--color-border)] px-4 py-2 leading-relaxed" {...props} />
-                  }}
-                >
-                  {cleanMarkdown(displayedText)}
-                </ReactMarkdown>
-              </div>
-            )}
+            <div className="prose-like max-w-none">
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={markdownComponents}
+              >
+                {cleanMarkdown(displayedText)}
+              </ReactMarkdown>
+            </div>
 
             {msg.codeSnippet && (
               <div className="bg-[#0A0A0B] border border-[var(--color-border)] p-6 font-mono text-sm overflow-x-auto mt-8 shadow-inner">

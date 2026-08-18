@@ -11,7 +11,7 @@ interface ArchitectureMapViewProps {
   selectedNode: ArchitectureNode | null;
   aiSummary: string;
   detectedStack?: string[];
-  onNavigate: (view: string) => void;
+  onNavigate: (view: ViewMode) => void;
   onRunNodeAudit?: (node: ArchitectureNode) => void;
   repoFullName?: string;
   onAskAI?: (node: ArchitectureNode) => void;
