@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { ChatMessage, ArchitectureNode } from '../types';
+import { cleanMarkdown } from '../utils/markdownUtils';
 
 interface AiChatViewProps {
   messages: ChatMessage[];
@@ -109,7 +110,7 @@ const ChatBubble: React.FC<{ msg: ChatMessage, isLastAi: boolean, onScrollToBott
                     td: ({node, ...props}) => <td className="border border-[var(--color-border)] px-4 py-2 leading-relaxed" {...props} />
                   }}
                 >
-                  {displayedText}
+                  {cleanMarkdown(displayedText)}
                 </ReactMarkdown>
               </div>
             )}

@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { ArchitectureNode, ArchitectureEdge, ViewMode } from '../types';
+import { cleanMarkdown } from '../utils/markdownUtils';
 
 export const ArchitectureMapView: React.FC<ArchitectureMapViewProps> = ({
   nodes,
@@ -589,7 +590,7 @@ export const ArchitectureMapView: React.FC<ArchitectureMapViewProps> = ({
                     td: ({node, ...props}) => <td className="border border-[var(--color-border)] px-4 py-2 leading-relaxed" {...props} />
                   }}
                 >
-                  {aiSummary}
+                  {cleanMarkdown(aiSummary)}
                 </ReactMarkdown>
               </div>
             </div>

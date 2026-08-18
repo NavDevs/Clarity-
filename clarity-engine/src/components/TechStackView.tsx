@@ -3,6 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { motion, AnimatePresence } from 'motion/react';
 import { TechStackItem } from '../types';
+import { cleanMarkdown } from '../utils/markdownUtils';
 
 import { API_BASE } from '../config';
 
@@ -165,7 +166,7 @@ export const TechStackView: React.FC<TechStackViewProps> = ({
                                 td: ({node, ...props}) => <td className="border border-[var(--color-border)] px-4 py-2 leading-relaxed" {...props} />
                               }}
                             >
-                              {briefs[item.id] || "Brief unavailable."}
+                              {cleanMarkdown(briefs[item.id] || "Brief unavailable.")}
                             </ReactMarkdown>
                           )}
                         </div>
