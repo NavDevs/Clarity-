@@ -131,6 +131,12 @@ def generate_diagram_data(stack_data: dict, structure_data: dict, pipeline_data:
             temperature=0.2
         )
         
+        # Remove <think> blocks and extract JSON
+        response_text = re.sub(r"<think>.*?</think>", "", response_text, flags=re.DOTALL).strip()
+        json_match = re.search(r"\{.*\}", response_text, flags=re.DOTALL)
+        if json_match:
+            response_text = json_match.group(0)
+            
         parsed_data = json.loads(response_text)
         
         if "nodes" in parsed_data and "edges" in parsed_data:

@@ -114,6 +114,7 @@ def generate_summary(stack_data: dict, structure_data: dict, pipeline_data: dict
     
     try:
         result = _call_groq(client, [{"role": "user", "content": prompt}])
+        result = re.sub(r"<think>.*?</think>", "", result, flags=re.DOTALL).strip()
         _set_cache(cache_key, result)
         return result
     except RateLimitError:
@@ -162,7 +163,8 @@ def answer_question(context_data: dict, question: str, history: list = None) -> 
     messages.append({"role": "user", "content": question})
     
     try:
-        return _call_groq(client, messages)
+        result = _call_groq(client, messages, temperature=0.3)
+        return re.sub(r"<think>.*?</think>", "", result, flags=re.DOTALL).strip()
     except RateLimitError:
         return "Sorry, I've hit the rate limit. Please wait a moment and try again."
     except APIStatusError as e:
@@ -203,7 +205,8 @@ def generate_tech_brief(tech_name: str, context_data: dict) -> str:
     Do not add extra conversational text.
     """
     try:
-        result = _call_groq(client, [{"role": "user", "content": prompt}])
+        result = _call_groq(client, [{"role": "user", "content": prompt}], temperature=0.3)
+        result = re.sub(r"<think>.*?</think>", "", result, flags=re.DOTALL).strip()
         _set_cache(cache_key, result)
         return result
     except Exception as e:
