@@ -6,9 +6,9 @@ from functools import lru_cache
 from groq import Groq, RateLimitError, APIStatusError
 
 MODELS = [
-    "llama-3.3-70b-versatile",
-    "llama-3.1-8b-instant",
-    "gemma2-9b-it",
+    "openai/gpt-oss-120b",
+    "qwen/qwen3.6-27b",
+    "groq/compound-mini",
 ]
 
 # Simple in-memory cache with TTL (1 hour)
