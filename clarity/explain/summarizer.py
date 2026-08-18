@@ -6,9 +6,9 @@ from functools import lru_cache
 from groq import Groq, RateLimitError, APIStatusError
 
 MODELS = [
+    "groq/compound",
     "openai/gpt-oss-120b",
     "qwen/qwen3.6-27b",
-    "groq/compound-mini",
 ]
 
 # Simple in-memory cache with TTL (1 hour)
@@ -150,7 +150,7 @@ def answer_question(context_data: dict, question: str, history: list = None) -> 
     6. **Use rich Markdown** — bold key terms, use code blocks for file paths and class names.
     7. **NEVER reveal or mention internal temp paths** (e.g. `/tmp/clarity_repo_...`). Always use relative paths from the repo root.
     8. **Be direct and authoritative.** You are an expert. State facts, not opinions.
-    9. **STRICT LENGTH RULE:** Keep your answers extremely short and concise. Answer in 2 to 3 brief bullet points maximum. No long paragraphs.
+    9. **Answer completely and accurately.** Provide enough detail to fully answer the user's question. Do not skip important technical details.
 
     Repository Context (Tech Stack, Folder Structure, File Names, and Call Graph):
     {json.dumps(context_data, indent=2)}

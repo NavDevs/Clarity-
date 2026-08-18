@@ -16,9 +16,9 @@ from typing import Dict, Any
 from groq import Groq, RateLimitError, APIStatusError
 
 MODELS = [
+    "groq/compound",
     "openai/gpt-oss-120b",
     "qwen/qwen3.6-27b",
-    "groq/compound-mini",
 ]
 
 FALLBACK_DATA = {
