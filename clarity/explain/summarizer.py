@@ -8,7 +8,7 @@ from groq import Groq, RateLimitError, APIStatusError
 MODELS = [
     "llama-3.3-70b-versatile",
     "llama-3.1-8b-instant",
-    "llama3-8b-8192",
+    "gemma2-9b-it",
 ]
 
 # Simple in-memory cache with TTL (1 hour)
