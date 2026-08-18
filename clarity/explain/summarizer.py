@@ -94,13 +94,13 @@ def generate_summary(stack_data: dict, structure_data: dict, pipeline_data: dict
     
     prompt = f"""
     You are a senior software architect explaining a repository to a junior developer or a non-technical stakeholder.
-    Based on the following structured data extracted from the repository, provide a detailed, multi-paragraph explanation of what this project does and how it works.
+    Based on the following structured data extracted from the repository, provide an EXTREMELY short, easy-to-understand briefing.
     
     Requirements:
     1. Write in simple, easy-to-understand words. Avoid overly dense technical jargon where possible.
-    2. Use standard Markdown formatting. Include clear headings (e.g. ### Purpose, ### Architecture, ### Core Features).
-    3. Use bullet points heavily for readability, breaking down complex information into concise, readable lists.
-    4. Keep it engaging, clear, and perfectly formatted for a frontend Markdown renderer.
+    2. STRICT RULE: Your entire response MUST be exactly 2 to 3 short bullet points. Do not write a long essay.
+    3. Do not include detailed tables or long paragraphs. Just the most critical overview.
+    4. Keep it engaging and clear.
     
     Stack:
     {json.dumps(stack_data, indent=2)}
@@ -147,9 +147,10 @@ def answer_question(context_data: dict, question: str, history: list = None) -> 
     3. **NEVER speculate or list possibilities.** If the exact answer exists in the context, state it directly and confidently. If a filename or class name is in the data, name it explicitly.
     4. **If the information truly cannot be found ANYWHERE in the provided context**, say exactly: "The repository context does not contain this information. To find this, check [specific file path from the context that is most relevant]." Then stop. Do not guess.
     5. **Be a detective, not a guesser.** Look into filenames, folder names, package names, dependency trees, import paths, and call graphs to infer exact technical details. A file named `random_forest_classifier.py` IS the algorithm. A dependency named `scikit-learn` with a file named `train.py` tells you exactly what framework and pipeline is used.
-    6. **Use rich Markdown** — bold key terms, use code blocks for file paths and class names, use headers to organize long answers.
+    6. **Use rich Markdown** — bold key terms, use code blocks for file paths and class names.
     7. **NEVER reveal or mention internal temp paths** (e.g. `/tmp/clarity_repo_...`). Always use relative paths from the repo root.
     8. **Be direct and authoritative.** You are an expert. State facts, not opinions.
+    9. **STRICT LENGTH RULE:** Keep your answers extremely short and concise. Answer in 2 to 3 brief bullet points maximum. No long paragraphs.
 
     Repository Context (Tech Stack, Folder Structure, File Names, and Call Graph):
     {json.dumps(context_data, indent=2)}
