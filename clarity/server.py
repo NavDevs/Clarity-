@@ -221,8 +221,20 @@ async def analyze_repo(req: AnalyzeRequest, db: Session = Depends(get_db), curre
                 except Exception:
                     pass
         
-        summary_text = generate_summary(stack_data, structure_data, pipeline_data)
-        diagram_data = generate_diagram_data(stack_data, structure_data, pipeline_data)
+        # TRUNCATE PIPELINE DATA for AI context window limits
+        ai_pipeline_data = pipeline_data
+        if isinstance(pipeline_data, dict) and len(pipeline_data) > 15:
+            # Sort files by their internal complexity (amount of logic)
+            sorted_files = sorted(
+                pipeline_data.items(), 
+                key=lambda x: len(x[1].get('imports', [])) + len(x[1].get('functions', [])) + len(x[1].get('classes', [])), 
+                reverse=True
+            )
+            ai_pipeline_data = dict(sorted_files[:15])
+            ai_pipeline_data["_TRUNCATED_"] = f"And {len(pipeline_data) - 15} more files omitted for brevity..."
+            
+        summary_text = generate_summary(stack_data, structure_data, ai_pipeline_data)
+        diagram_data = generate_diagram_data(stack_data, structure_data, ai_pipeline_data)
         
         result = {
             "audit": {
