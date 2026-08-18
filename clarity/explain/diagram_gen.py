@@ -84,9 +84,12 @@ def generate_diagram_data(stack_data: dict, structure_data: dict, pipeline_data:
     You are an expert Software Architect analyzing a code repository.
     I will provide you with the detected technology stack, the folder/file structure, and potentially the code flow logic (functions and classes).
     
-    Your task is to build a HIGHLY ACCURATE but SIMPLE and CLEAN Architecture Map (Arch Map).
-    To prevent visual clutter, you MUST group related files, functions, and classes into high-level logical domains/services (e.g. 'Authentication Service', 'Payment Gateway', 'Core UI Screens', etc.). 
-    CRITICAL: NEVER generate more than 12 nodes in total. Keep it simple and focused on the big picture.
+    Your task is to build a HIGHLY ACCURATE but EXTREMELY COMPACT Architecture Map (Arch Map).
+    To prevent visual clutter, you MUST group related files and logic into high-level logical domains/services. 
+    CRITICAL INSTRUCTIONS FOR SIMPLICITY:
+    - NEVER generate more than 8 nodes in total (6 to 8 is ideal).
+    - EXCLUDE entirely all boilerplate, configuration, tests, assets, utilities, constants, and basic platform integrations (e.g., android/ ios/ wrappers) UNLESS they contain absolutely critical business logic.
+    - ONLY include the most vital and necessary blocks (e.g. App Core, Core UI Screens, State Management, Database/API Services). Keep it focused on the big picture.
     
     Tech Stack:
     {json.dumps(stack_data, indent=2)}
