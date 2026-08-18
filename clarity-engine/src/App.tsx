@@ -517,7 +517,7 @@ export default function App() {
                   repoFullName={activeScan.repoName}
                   onAskAI={(node) => {
                     setCurrentView('chat');
-                    handleSendMessage(`Can you explain the purpose and logic of the **${node.label}** block located at \`${node.id}\` in a short, understandable summary?`);
+                    handleSendMessage(`Can you explain the purpose and logic of the **${node.name}** block located at \`${node.path}\` in a short, understandable summary?`);
                   }}
                 />
               </motion.div>
