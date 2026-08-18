@@ -515,6 +515,10 @@ export default function App() {
                   detectedStack={activeScan.techStack.map((t) => t.name)}
                   onNavigate={setCurrentView}
                   repoFullName={activeScan.repoName}
+                  onAskAI={(node) => {
+                    setCurrentView('chat');
+                    handleSendMessage(`Can you explain the purpose and logic of the **${node.label}** block located at \`${node.id}\` in a short, understandable summary?`);
+                  }}
                 />
               </motion.div>
             )}

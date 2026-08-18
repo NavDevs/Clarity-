@@ -4,6 +4,19 @@ import remarkGfm from 'remark-gfm';
 import { ArchitectureNode, ArchitectureEdge, ViewMode } from '../types';
 import { cleanMarkdown } from '../utils/markdownUtils';
 
+interface ArchitectureMapViewProps {
+  nodes: ArchitectureNode[];
+  edges?: ArchitectureEdge[];
+  onSelectNode: (node: ArchitectureNode) => void;
+  selectedNode: ArchitectureNode | null;
+  aiSummary: string;
+  detectedStack?: string[];
+  onNavigate: (view: string) => void;
+  onRunNodeAudit?: (node: ArchitectureNode) => void;
+  repoFullName?: string;
+  onAskAI?: (node: ArchitectureNode) => void;
+}
+
 export const ArchitectureMapView: React.FC<ArchitectureMapViewProps> = ({
   nodes,
   edges = [],
@@ -13,7 +26,8 @@ export const ArchitectureMapView: React.FC<ArchitectureMapViewProps> = ({
   detectedStack,
   onNavigate,
   onRunNodeAudit,
-  repoFullName = 'facebook/react' // Fallback
+  repoFullName = 'facebook/react', // Fallback
+  onAskAI
 }) => {
   const [copiedCmd, setCopiedCmd] = useState(false);
   const [activeNodeState, setActiveNodeState] = useState<ArchitectureNode>(selectedNode || nodes[0]);
@@ -547,7 +561,13 @@ export const ArchitectureMapView: React.FC<ArchitectureMapViewProps> = ({
                   </button>
                 )}
                 <button
-                  onClick={() => onNavigate('chat')}
+                  onClick={() => {
+                    if (onAskAI && activeNodeState) {
+                      onAskAI(activeNodeState);
+                    } else {
+                      onNavigate('chat');
+                    }
+                  }}
                   className="btn-primary text-[10px] font-mono tracking-widest"
                 >
                   <span className="flex items-center justify-center gap-2">
