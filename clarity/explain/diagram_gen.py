@@ -68,7 +68,7 @@ def _call_groq(client: Groq, messages: list, **kwargs) -> str:
     raise last_error
 
 
-def generate_diagram_data(stack_data: dict, structure_data: dict) -> Dict[str, Any]:
+def generate_diagram_data(stack_data: dict, structure_data: dict, pipeline_data: dict = None) -> Dict[str, Any]:
     """
     Transforms the repository structure into a high-level logical architecture graph using Groq.
     """
@@ -92,6 +92,9 @@ def generate_diagram_data(stack_data: dict, structure_data: dict) -> Dict[str, A
     
     Folder/File Structure (and Flow Logic):
     {json.dumps(structure_data, indent=2)}
+    
+    Pipeline Data (Call Graphs & Imports):
+    {json.dumps(pipeline_data or {}, indent=2)}
     
     REQUIREMENTS:
     1. Output strictly valid JSON. Do not include markdown blocks like ```json or any conversational text.

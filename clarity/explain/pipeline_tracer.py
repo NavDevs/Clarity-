@@ -105,11 +105,11 @@ def trace_pipeline(repo_path: Path) -> Dict[str, Dict[str, List[str]]]:
         if "venv" in file_path.parts or ".git" in file_path.parts or "node_modules" in file_path.parts or "build" in file_path.parts:
             continue
             
-        if file_path.suffix == ".py" and file_path.name in ("main.py", "app.py", "cli.py", "__init__.py"):
+        if file_path.suffix == ".py":
             process_python(file_path)
-        elif file_path.suffix in (".js", ".ts", ".jsx", ".tsx") and file_path.name in ("index.js", "server.js", "app.js", "main.js", "index.ts", "server.ts", "app.ts", "main.ts", "route.ts", "route.js", "page.tsx", "page.jsx", "layout.tsx", "layout.jsx", "middleware.ts", "middleware.js"):
+        elif file_path.suffix in (".js", ".ts", ".jsx", ".tsx"):
             process_node(file_path)
-        elif file_path.suffix in (".dart", ".swift", ".kt", ".java") and file_path.name.lower() in ("main.dart", "appdelegate.swift", "mainactivity.kt", "mainactivity.java", "app.swift"):
+        elif file_path.suffix in (".dart", ".swift", ".kt", ".java"):
             process_mobile(file_path)
                  
     return call_graph

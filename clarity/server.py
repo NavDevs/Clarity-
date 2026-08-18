@@ -222,7 +222,7 @@ async def analyze_repo(req: AnalyzeRequest, db: Session = Depends(get_db), curre
                     pass
         
         summary_text = generate_summary(stack_data, structure_data, pipeline_data)
-        diagram_data = generate_diagram_data(stack_data, structure_data)
+        diagram_data = generate_diagram_data(stack_data, structure_data, pipeline_data)
         
         result = {
             "audit": {
