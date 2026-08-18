@@ -281,20 +281,26 @@ export const ArchitectureMapView: React.FC<ArchitectureMapViewProps> = ({
               let startX: number, startY: number, endX: number, endY: number;
               let cpDist: number;
               
+              // Calculate fanning offsets
+              const maxOffsetY = (nodeH / 2) - 15;
+              const maxOffsetX = (nodeW / 2) - 15;
+              const startOffsetY = Math.max(-maxOffsetY, Math.min(maxOffsetY, dy * 0.15));
+              const startOffsetX = Math.max(-maxOffsetX, Math.min(maxOffsetX, dx * 0.15));
+              
               if (Math.abs(dx) >= Math.abs(dy)) {
                 // Primarily horizontal connection
                 if (dx >= 0) {
                   // Target is to the RIGHT of source
                   startX = sourceNode.x + nodeW;
-                  startY = srcCY;
+                  startY = srcCY + startOffsetY;
                   endX = targetNode.x;
-                  endY = tgtCY;
+                  endY = tgtCY - startOffsetY;
                 } else {
                   // Target is to the LEFT of source
                   startX = sourceNode.x;
-                  startY = srcCY;
+                  startY = srcCY + startOffsetY;
                   endX = targetNode.x + nodeW;
-                  endY = tgtCY;
+                  endY = tgtCY - startOffsetY;
                 }
                 cpDist = Math.max(Math.abs(dx) * 0.4, 40);
                 const cpStartX = dx >= 0 ? startX + cpDist : startX - cpDist;
@@ -318,15 +324,15 @@ export const ArchitectureMapView: React.FC<ArchitectureMapViewProps> = ({
                 // Primarily vertical connection
                 if (dy >= 0) {
                   // Target is BELOW source
-                  startX = srcCX;
+                  startX = srcCX + startOffsetX;
                   startY = sourceNode.y + nodeH;
-                  endX = tgtCX;
+                  endX = tgtCX - startOffsetX;
                   endY = targetNode.y;
                 } else {
                   // Target is ABOVE source
-                  startX = srcCX;
+                  startX = srcCX + startOffsetX;
                   startY = sourceNode.y;
-                  endX = tgtCX;
+                  endX = tgtCX - startOffsetX;
                   endY = targetNode.y + nodeH;
                 }
                 cpDist = Math.max(Math.abs(dy) * 0.4, 40);
