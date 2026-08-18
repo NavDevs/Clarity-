@@ -82,14 +82,15 @@ def generate_diagram_data(stack_data: dict, structure_data: dict) -> Dict[str, A
     
     prompt = f"""
     You are an expert Software Architect analyzing a code repository.
-    I will provide you with the detected technology stack and the repository folder/file structure.
+    I will provide you with the detected technology stack, the folder/file structure, and potentially the code flow logic (functions and classes).
     
-    Your task is to identify the 5 to 12 CORE high-level architectural modules of this system (e.g., "Frontend UI", "API Gateway", "Authentication Service", "Database Models", "Core Logic", etc.) and how they interact with each other.
+    Your task is to build a HIGHLY ACCURATE Architecture Map (Arch Map).
+    Instead of just high-level generic modules, you must map out the actual logic, flow of control, and exact technical components (e.g., specific classes, entry points, core services, database models, etc.) based on the provided context.
     
     Tech Stack:
     {json.dumps(stack_data, indent=2)}
     
-    Folder/File Structure:
+    Folder/File Structure (and Flow Logic):
     {json.dumps(structure_data, indent=2)}
     
     REQUIREMENTS:
