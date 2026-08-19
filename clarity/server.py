@@ -234,9 +234,20 @@ async def analyze_repo(req: AnalyzeRequest, db: Session = Depends(get_db), curre
             ai_pipeline_data = dict(sorted_files[:8])
             ai_pipeline_data["_TRUNCATED_"] = f"And {len(pipeline_data) - 8} more files omitted for brevity..."
             
+        # TRUNCATE STRUCTURE DATA for AI context window limits
+        import copy
+        ai_structure_data = copy.deepcopy(structure_data)
+        def _truncate_structure(node, max_children=15):
+            if isinstance(node, dict) and "children" in node and isinstance(node["children"], list):
+                if len(node["children"]) > max_children:
+                    node["children"] = node["children"][:max_children] + [{"name": f"...and {len(node['children']) - max_children} more files omitted", "type": "omitted"}]
+                for child in node["children"]:
+                    _truncate_structure(child, max_children)
+        _truncate_structure(ai_structure_data.get("root", {}))
+            
         with concurrent.futures.ThreadPoolExecutor() as executor:
-            future_summary = executor.submit(generate_summary, stack_data, structure_data, ai_pipeline_data)
-            future_diagram = executor.submit(generate_diagram_data, stack_data, structure_data, ai_pipeline_data)
+            future_summary = executor.submit(generate_summary, stack_data, ai_structure_data, ai_pipeline_data)
+            future_diagram = executor.submit(generate_diagram_data, stack_data, ai_structure_data, ai_pipeline_data)
             
             summary_text = future_summary.result()
             diagram_data = future_diagram.result()
@@ -254,8 +265,8 @@ async def analyze_repo(req: AnalyzeRequest, db: Session = Depends(get_db), curre
                 "stats": stats_data,
                 "context": {
                     "stack": stack_data,
-                    "structure": structure_data,
-                    "pipeline": pipeline_data,
+                    "structure": ai_structure_data,
+                    "pipeline": ai_pipeline_data,
                     "readme": readme_text
                 }
             }

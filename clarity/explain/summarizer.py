@@ -138,6 +138,35 @@ def answer_question(context_data: dict, question: str, history: list = None) -> 
         
     client = Groq(api_key=api_key)
     
+    import copy
+    safe_context = copy.deepcopy(context_data)
+    
+    # Aggressive truncation for chat prompt to stay well below 8000 TPM limit
+    if "pipeline" in safe_context and isinstance(safe_context["pipeline"], dict):
+        pipeline = safe_context["pipeline"]
+        if len(pipeline) > 10:
+            # Keep only the 10 most logic-heavy files
+            sorted_files = sorted(
+                pipeline.items(), 
+                key=lambda x: len(x[1].get('imports', [])) + len(x[1].get('functions', [])) + len(x[1].get('classes', [])), 
+                reverse=True
+            )
+            safe_context["pipeline"] = dict(sorted_files[:10])
+            safe_context["pipeline"]["_TRUNCATED_"] = f"And {len(pipeline) - 10} more files omitted to fit AI memory limits..."
+            
+    if "readme" in safe_context and isinstance(safe_context["readme"], str):
+        if len(safe_context["readme"]) > 2000:
+            safe_context["readme"] = safe_context["readme"][:2000] + "...(truncated)"
+            
+    if "structure" in safe_context and isinstance(safe_context["structure"], dict):
+        def _truncate_children(node, max_children=15):
+            if isinstance(node, dict) and "children" in node and isinstance(node["children"], list):
+                if len(node["children"]) > max_children:
+                    node["children"] = node["children"][:max_children] + [{"name": f"...and {len(node['children']) - max_children} more", "type": "omitted"}]
+                for child in node["children"]:
+                    _truncate_children(child, max_children)
+        _truncate_children(safe_context.get("structure", {}).get("root", {}))
+
     prompt = f"""
     You are Clarity AI — an elite, world-class software architect and code intelligence engine with expert-level depth.
     You have been given the full metadata of a repository: its exact tech stack, folder structure, file names, and dependency call graph.
@@ -152,13 +181,14 @@ def answer_question(context_data: dict, question: str, history: list = None) -> 
     6. **Be direct, authoritative, and extremely accurate.** You are an expert. Provide enough detail to fully answer the user's question, including code logic where applicable.
 
     Repository Context (Tech Stack, Folder Structure, File Names, and Call Graph):
-    {json.dumps(context_data, indent=2)}
+    {json.dumps(safe_context, indent=2)}
     """
     
     messages = [{"role": "system", "content": prompt}]
     
     if history:
-        for msg in history[-10:]:
+        # Keep only the last 4 messages (2 interactions) to strictly avoid memory limits
+        for msg in history[-4:]:
             messages.append({"role": msg.get("role", "user"), "content": msg.get("content", "")})
             
     messages.append({"role": "user", "content": question})
@@ -191,10 +221,32 @@ def generate_tech_brief(tech_name: str, context_data: dict) -> str:
         
     client = Groq(api_key=api_key)
     
+    import copy
+    safe_context = copy.deepcopy(context_data)
+    if "pipeline" in safe_context and isinstance(safe_context["pipeline"], dict) and len(safe_context["pipeline"]) > 5:
+        sorted_files = sorted(
+            safe_context["pipeline"].items(), 
+            key=lambda x: len(x[1].get('imports', [])) + len(x[1].get('functions', [])) + len(x[1].get('classes', [])), 
+            reverse=True
+        )
+        safe_context["pipeline"] = dict(sorted_files[:5])
+        safe_context["pipeline"]["_TRUNCATED_"] = "..."
+    if "readme" in safe_context and isinstance(safe_context["readme"], str) and len(safe_context["readme"]) > 1000:
+        safe_context["readme"] = safe_context["readme"][:1000] + "..."
+        
+    if "structure" in safe_context and isinstance(safe_context["structure"], dict):
+        def _truncate_children_brief(node, max_children=10):
+            if isinstance(node, dict) and "children" in node and isinstance(node["children"], list):
+                if len(node["children"]) > max_children:
+                    node["children"] = node["children"][:max_children] + [{"name": f"...and {len(node['children']) - max_children} more", "type": "omitted"}]
+                for child in node["children"]:
+                    _truncate_children_brief(child, max_children)
+        _truncate_children_brief(safe_context.get("structure", {}).get("root", {}))
+
     prompt = f"""
     You are an expert technical interviewer. I need an interview brief for the technology: {tech_name}.
     Context of the repository it was found in:
-    {json.dumps(context_data, indent=2)}
+    {json.dumps(safe_context, indent=2)}
     
     Provide a very brief, easy-to-understand explanation using markdown.
     **CRITICAL RULES:**
