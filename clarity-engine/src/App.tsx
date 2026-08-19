@@ -27,6 +27,38 @@ import { DocsModal } from './components/DocsModal';
 import { PricingModal } from './components/PricingModal';
 import { SettingsView } from './components/SettingsView';
 
+const LoadingStep = ({ text, delay }: { text: string, delay: number }) => {
+  const [active, React_useState_active] = React.useState(false);
+  const [done, React_useState_done] = React.useState(false);
+
+  React.useEffect(() => {
+    const t1 = setTimeout(() => React_useState_active(true), delay * 1000);
+    const t2 = setTimeout(() => React_useState_done(true), (delay + 1.5) * 1000);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, [delay]);
+
+  return (
+    <div className="flex items-center gap-3 font-mono text-xs uppercase tracking-wider w-full">
+       <div className="w-4 h-4 flex items-center justify-center shrink-0">
+          {!active && <div className="w-1.5 h-1.5 rounded-full bg-[var(--color-border)]" />}
+          {active && !done && (
+            <motion.span 
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+              className="material-symbols-outlined text-[14px] text-[var(--color-accent)]"
+            >
+              sync
+            </motion.span>
+          )}
+          {done && <span className="material-symbols-outlined text-[14px] text-green-500">check</span>}
+       </div>
+       <span className={`${active ? 'text-[var(--color-foreground)]' : 'text-[var(--color-muted-foreground)]'} transition-colors duration-500 text-left`}>
+         {text}
+       </span>
+    </div>
+  );
+};
+
 export default function App() {
   const [currentView, setCurrentView] = useState<ViewMode>(() => {
     const hash = window.location.hash.replace('#/', '');
@@ -353,6 +385,69 @@ export default function App() {
 
   return (
     <div className="flex flex-col h-screen w-screen bg-[var(--color-background)] text-[var(--color-foreground)] font-sans overflow-hidden bg-noise">
+      <AnimatePresence>
+        {isAnalyzing && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[var(--color-background)] bg-noise"
+          >
+             <div className="flex flex-col items-center w-full max-w-md px-6">
+                
+                {/* Cool scanning square animation */}
+                <div className="relative w-32 h-32 mb-12 flex items-center justify-center">
+                   <motion.div 
+                     animate={{ rotate: 360 }}
+                     transition={{ duration: 8, ease: "linear", repeat: Infinity }}
+                     className="absolute inset-0 border border-[var(--color-border)] rounded-full"
+                   />
+                   <motion.div 
+                     animate={{ rotate: -360 }}
+                     transition={{ duration: 12, ease: "linear", repeat: Infinity }}
+                     className="absolute inset-4 border border-dashed border-[var(--color-muted-foreground)] rounded-full"
+                   />
+                   <motion.div 
+                     animate={{ scale: [1, 1.1, 1], opacity: [0.5, 1, 0.5] }}
+                     transition={{ duration: 2, ease: "easeInOut", repeat: Infinity }}
+                     className="w-4 h-4 bg-[var(--color-accent)] rounded-full shadow-[0_0_15px_var(--color-accent)]"
+                   />
+                   <motion.div
+                     className="absolute inset-0 border-t-2 border-[var(--color-accent)] rounded-full"
+                     animate={{ rotate: 360 }}
+                     transition={{ duration: 2, ease: "easeInOut", repeat: Infinity }}
+                   />
+                </div>
+
+                <div className="flex flex-col items-center text-center w-full">
+                   <motion.h2 
+                     animate={{ opacity: [0.7, 1, 0.7] }}
+                     transition={{ duration: 2, ease: "easeInOut", repeat: Infinity }}
+                     className="font-display font-bold text-4xl tracking-tighter text-[var(--color-foreground)] mb-4"
+                   >
+                      INGESTING REPO.
+                   </motion.h2>
+                   
+                   <div className="flex items-center justify-center gap-4 mb-8 w-full">
+                      <span className="w-12 h-px bg-[var(--color-accent)] block" />
+                      <span className="font-mono text-xs font-semibold text-[var(--color-accent)] uppercase tracking-[0.2em]">
+                        AI Neural Mapping
+                      </span>
+                      <span className="w-12 h-px bg-[var(--color-accent)] block" />
+                   </div>
+
+                   <div className="w-full flex flex-col items-start gap-3 border border-[var(--color-border)] bg-[var(--color-card)] p-6">
+                      <LoadingStep text="Fetching Repository Tree..." delay={0} />
+                      <LoadingStep text="Auditing Hardcoded Secrets..." delay={0.5} />
+                      <LoadingStep text="Resolving Dependency Graphs..." delay={1.5} />
+                      <LoadingStep text="Building AI Architecture Map..." delay={2.5} />
+                   </div>
+                </div>
+             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Top Navigation - Removed for cleaner full-height layout */}
 
       {/* Main Body Layout */}

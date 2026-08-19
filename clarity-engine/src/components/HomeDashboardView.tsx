@@ -150,69 +150,6 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
 
   return (
     <>
-      <AnimatePresence>
-        {isAnalyzing && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[var(--color-background)] bg-noise backdrop-blur-xl"
-          >
-             <div className="flex flex-col items-center w-full max-w-md px-6">
-                
-                {/* Cool scanning square animation */}
-                <div className="relative w-32 h-32 mb-12 flex items-center justify-center">
-                   <motion.div 
-                     animate={{ rotate: 360 }}
-                     transition={{ duration: 8, ease: "linear", repeat: Infinity }}
-                     className="absolute inset-0 border border-[var(--color-border)] rounded-full"
-                   />
-                   <motion.div 
-                     animate={{ rotate: -360 }}
-                     transition={{ duration: 12, ease: "linear", repeat: Infinity }}
-                     className="absolute inset-4 border border-dashed border-[var(--color-muted-foreground)] rounded-full"
-                   />
-                   <motion.div 
-                     animate={{ scale: [1, 1.1, 1], opacity: [0.5, 1, 0.5] }}
-                     transition={{ duration: 2, ease: "easeInOut", repeat: Infinity }}
-                     className="w-4 h-4 bg-[var(--color-accent)] rounded-full shadow-[0_0_15px_var(--color-accent)]"
-                   />
-                   <motion.div
-                     className="absolute inset-0 border-t-2 border-[var(--color-accent)] rounded-full"
-                     animate={{ rotate: 360 }}
-                     transition={{ duration: 2, ease: "easeInOut", repeat: Infinity }}
-                   />
-                </div>
-
-                <div className="flex flex-col items-center text-center w-full">
-                   <motion.h2 
-                     animate={{ opacity: [0.7, 1, 0.7] }}
-                     transition={{ duration: 2, ease: "easeInOut", repeat: Infinity }}
-                     className="font-display font-bold text-4xl tracking-tighter text-[var(--color-foreground)] mb-4"
-                   >
-                      INGESTING REPO.
-                   </motion.h2>
-                   
-                   <div className="flex items-center justify-center gap-4 mb-8 w-full">
-                      <span className="w-12 h-px bg-[var(--color-accent)] block" />
-                      <span className="font-mono text-xs font-semibold text-[var(--color-accent)] uppercase tracking-[0.2em]">
-                        AI Neural Mapping
-                      </span>
-                      <span className="w-12 h-px bg-[var(--color-accent)] block" />
-                   </div>
-
-                   <div className="w-full flex flex-col items-start gap-3 border border-[var(--color-border)] bg-[var(--color-card)] p-6">
-                      <LoadingStep text="Fetching Repository Tree..." delay={0} />
-                      <LoadingStep text="Auditing Hardcoded Secrets..." delay={0.5} />
-                      <LoadingStep text="Resolving Dependency Graphs..." delay={1.5} />
-                      <LoadingStep text="Building AI Architecture Map..." delay={2.5} />
-                   </div>
-                </div>
-             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       <div className="flex flex-col relative w-full h-full bg-[var(--color-background)] overflow-y-auto overflow-x-hidden p-4 sm:p-8 md:p-16">
       <div className="absolute top-0 right-0 pointer-events-none opacity-5 select-none z-0">
         <span className="font-display font-bold text-[15rem] leading-none tracking-tighter text-[var(--color-foreground)]">DSH</span>
