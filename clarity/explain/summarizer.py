@@ -102,6 +102,7 @@ def generate_summary(stack_data: dict, structure_data: dict, pipeline_data: dict
     2. STRICT RULE: Your entire response MUST be exactly 2 to 3 short bullet points. Do not write a long essay.
     3. Do not include detailed tables or long paragraphs. Just the most critical overview.
     4. Keep it engaging and clear.
+    5. NEVER use HTML tags like `<br>` or `<br/>`. Always use standard markdown formatting (e.g., `\n\n` for line breaks, markdown lists).
     
     Stack:
     {json.dumps(stack_data, indent=2)}
@@ -116,6 +117,7 @@ def generate_summary(stack_data: dict, structure_data: dict, pipeline_data: dict
     try:
         result = _call_groq(client, [{"role": "user", "content": prompt}])
         result = re.sub(r"<think>.*?</think>", "", result, flags=re.DOTALL).strip()
+        result = result.replace("<br>", "\n").replace("<br/>", "\n").replace("<br />", "\n")
         _set_cache(cache_key, result)
         return result
     except RateLimitError:
@@ -177,8 +179,10 @@ def answer_question(context_data: dict, question: str, history: list = None) -> 
     2. **Blend in your own expert knowledge.** If the repository context does not contain the exact answer, or if the user asks an out-of-context software question, YOU MUST answer it using your own intelligence and general software engineering knowledge.
     3. **NEVER refuse to answer.** Do not say "The repository context does not contain this information" or complain about missing context. Just give the best, most intelligent technical answer possible.
     4. **Use rich Markdown** — bold key terms, use code blocks for file paths, functions, and class names.
-    5. **NEVER reveal or mention internal temp paths** (e.g. `/tmp/clarity_repo_...`). Always use relative paths from the repo root.
-    6. **Be direct, authoritative, and extremely accurate.** You are an expert. Provide enough detail to fully answer the user's question, including code logic where applicable.
+    5. **NEVER use HTML tags** like `<br>` or `<br/>`. Always use standard markdown spacing (`\n\n`) for line breaks. 
+    6. **NEVER reveal or mention internal temp paths** (e.g. `/tmp/clarity_repo_...`). Always use relative paths from the repo root.
+    7. **Be direct, authoritative, and extremely accurate.** You are an expert. Provide enough detail to fully answer the user's question, including code logic where applicable.
+    8. **STRICTLY respect requested length.** If the user asks for a short answer (e.g., "for VIVA", "brief", "short"), you MUST provide a very concise, to-the-point answer without extra fluff, regardless of how complex the topic is.
 
     Repository Context (Tech Stack, Folder Structure, File Names, and Call Graph):
     {json.dumps(safe_context, indent=2)}
@@ -195,7 +199,9 @@ def answer_question(context_data: dict, question: str, history: list = None) -> 
     
     try:
         result = _call_groq(client, messages, temperature=0.3)
-        return re.sub(r"<think>.*?</think>", "", result, flags=re.DOTALL).strip()
+        result = re.sub(r"<think>.*?</think>", "", result, flags=re.DOTALL).strip()
+        result = result.replace("<br>", "\n").replace("<br/>", "\n").replace("<br />", "\n")
+        return result
     except RateLimitError:
         return "Sorry, I've hit the rate limit. Please wait a moment and try again."
     except APIStatusError as e:
@@ -250,16 +256,18 @@ def generate_tech_brief(tech_name: str, context_data: dict) -> str:
     
     Provide a very brief, easy-to-understand explanation using markdown.
     **CRITICAL RULES:**
-    1. The ENTIRE response MUST be exactly 2 to 3 short bullet points. Do not write paragraphs.
-    2. Do NOT use section headers (like ### Primary Use Case).
-    3. Focus on what it is, why it was chosen (trade-offs), and how it is used here.
-    4. If the exact implementation details of {tech_name} are NOT in the context, DO NOT GUESS OR INFER. Just state its standard use case.
+    1. NEVER use HTML tags like `<br>` or `<br/>`. Use standard markdown `\n\n` for line breaks.
+    2. The ENTIRE response MUST be exactly 2 to 3 short bullet points. Do not write paragraphs.
+    3. Do NOT use section headers (like ### Primary Use Case).
+    4. Focus on what it is, why it was chosen (trade-offs), and how it is used here.
+    5. If the exact implementation details of {tech_name} are NOT in the context, DO NOT GUESS OR INFER. Just state its standard use case.
     
     Do not add extra conversational text.
     """
     try:
-        result = _call_groq(client, [{"role": "user", "content": prompt}], temperature=0.3)
+        result = _call_groq(client, [{"role": "user", "content": prompt}], temperature=0.2)
         result = re.sub(r"<think>.*?</think>", "", result, flags=re.DOTALL).strip()
+        result = result.replace("<br>", "\n").replace("<br/>", "\n").replace("<br />", "\n")
         _set_cache(cache_key, result)
         return result
     except Exception as e:
