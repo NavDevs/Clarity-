@@ -146,15 +146,16 @@ def answer_question(context_data: dict, question: str, history: list = None) -> 
     # Aggressive truncation for chat prompt to stay well below 8000 TPM limit
     if "pipeline" in safe_context and isinstance(safe_context["pipeline"], dict):
         pipeline = safe_context["pipeline"]
-        if len(pipeline) > 10:
+        pipeline_items = {k: v for k, v in pipeline.items() if isinstance(v, dict)}
+        if len(pipeline_items) > 10:
             # Keep only the 10 most logic-heavy files
             sorted_files = sorted(
-                pipeline.items(), 
+                pipeline_items.items(), 
                 key=lambda x: len(x[1].get('imports', [])) + len(x[1].get('functions', [])) + len(x[1].get('classes', [])), 
                 reverse=True
             )
             safe_context["pipeline"] = dict(sorted_files[:10])
-            safe_context["pipeline"]["_TRUNCATED_"] = f"And {len(pipeline) - 10} more files omitted to fit AI memory limits..."
+            safe_context["pipeline"]["_TRUNCATED_"] = f"And {len(pipeline_items) - 10} more files omitted to fit AI memory limits..."
             
     if "readme" in safe_context and isinstance(safe_context["readme"], str):
         if len(safe_context["readme"]) > 2000:
@@ -228,10 +229,12 @@ def generate_tech_brief(tech_name: str, context_data: dict) -> str:
     client = Groq(api_key=api_key)
     
     import copy
-    safe_context = copy.deepcopy(context_data)
+    safe_context = copy.deepcopy(context_data or {})
     if "pipeline" in safe_context and isinstance(safe_context["pipeline"], dict) and len(safe_context["pipeline"]) > 5:
+        # Filter out string items like '_TRUNCATED_' before sorting
+        pipeline_items = {k: v for k, v in safe_context["pipeline"].items() if isinstance(v, dict)}
         sorted_files = sorted(
-            safe_context["pipeline"].items(), 
+            pipeline_items.items(), 
             key=lambda x: len(x[1].get('imports', [])) + len(x[1].get('functions', [])) + len(x[1].get('classes', [])), 
             reverse=True
         )
