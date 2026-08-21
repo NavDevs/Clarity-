@@ -23,10 +23,12 @@ def detect_stack(repo_path: Path, pipeline_data: Dict[str, List[str]] = None) ->
     
     # 0. AST Graph Fallback (highest accuracy)
     if pipeline_data:
-        for file_name, imports in pipeline_data.items():
-            for imp in imports:
-                if imp.lower() not in dependencies and not imp.startswith('.'):
-                    dependencies.append(imp.lower())
+        for file_name, data in pipeline_data.items():
+            # data is a dict: {'imports': [...], 'functions': [...], 'classes': [...]}
+            if isinstance(data, dict) and 'imports' in data:
+                for imp in data['imports']:
+                    if imp.lower() not in dependencies and not imp.startswith('.'):
+                        dependencies.append(imp.lower())
     
     
     # Python - requirements.txt
