@@ -7,9 +7,9 @@ from functools import lru_cache
 from groq import Groq, RateLimitError, APIStatusError
 
 MODELS = [
-    "groq/compound",
-    "openai/gpt-oss-120b",
     "qwen/qwen3.6-27b",
+    "openai/gpt-oss-120b",
+    "groq/compound",
 ]
 
 # Simple in-memory cache with TTL (1 hour)
@@ -184,6 +184,7 @@ def answer_question(context_data: dict, question: str, history: list = None) -> 
     6. **NEVER reveal or mention internal temp paths** (e.g. `/tmp/clarity_repo_...`). Always use relative paths from the repo root.
     7. **Be direct, authoritative, and extremely accurate.** You are an expert. Provide enough detail to fully answer the user's question, including code logic where applicable.
     8. **STRICTLY respect requested length.** If the user asks for a short answer (e.g., "for VIVA", "brief", "short"), you MUST provide a very concise, to-the-point answer without extra fluff, regardless of how complex the topic is.
+    9. **Handle Conversational Chat Properly.** If the user is just saying hi, thanking you, or being conversational (e.g. "hi", "good", "thanks"), respond naturally and conversationally (e.g., "Hello! I'm ready to help you analyze this repository.") WITHOUT dumping a repository analysis. Only provide technical deep dives when explicitly asked about the code or architecture.
 
     Repository Context (Tech Stack, Folder Structure, File Names, and Call Graph):
     {json.dumps(safe_context, indent=2)}
