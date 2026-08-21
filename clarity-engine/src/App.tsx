@@ -391,7 +391,7 @@ export default function App() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[var(--color-background)] bg-noise"
+            className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-black/60 backdrop-blur-md bg-noise"
           >
              <div className="flex flex-col items-center w-full max-w-md px-6">
                 
@@ -495,7 +495,7 @@ export default function App() {
               </motion.div>
             )}
 
-            {currentView === 'home' && !isAnalyzing && (
+            {currentView === 'home' && (
               <motion.div key="home" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }} className="flex-1 flex flex-col relative overflow-hidden">
                 <HomeDashboardView
                   token={token}
