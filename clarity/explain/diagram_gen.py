@@ -16,9 +16,10 @@ from typing import Dict, Any
 from groq import Groq, RateLimitError, APIStatusError
 
 MODELS = [
-    "qwen/qwen3.6-27b",
     "openai/gpt-oss-120b",
+    "groq/compound-mini",
     "groq/compound",
+    "qwen/qwen3.6-27b",
 ]
 
 FALLBACK_DATA = {
@@ -132,7 +133,7 @@ def generate_diagram_data(stack_data: dict, structure_data: dict, pipeline_data:
         )
         
         # Remove <think> blocks and extract JSON
-        response_text = re.sub(r"<think>.*?</think>", "", response_text, flags=re.DOTALL).strip()
+        response_text = re.sub(r"<think>[\s\S]*?(?:</think>|$)", "", response_text).strip()
         json_match = re.search(r"\{.*\}", response_text, flags=re.DOTALL)
         if json_match:
             response_text = json_match.group(0)

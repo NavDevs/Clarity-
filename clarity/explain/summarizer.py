@@ -7,9 +7,10 @@ from functools import lru_cache
 from groq import Groq, RateLimitError, APIStatusError
 
 MODELS = [
-    "qwen/qwen3.6-27b",
     "openai/gpt-oss-120b",
+    "groq/compound-mini",
     "groq/compound",
+    "qwen/qwen3.6-27b",
 ]
 
 # Simple in-memory cache with TTL (1 hour)
@@ -116,7 +117,7 @@ def generate_summary(stack_data: dict, structure_data: dict, pipeline_data: dict
     
     try:
         result = _call_groq(client, [{"role": "user", "content": prompt}])
-        result = re.sub(r"<think>.*?</think>", "", result, flags=re.DOTALL).strip()
+        result = re.sub(r"<think>[\s\S]*?(?:</think>|$)", "", result).strip()
         result = result.replace("<br>", "\n").replace("<br/>", "\n").replace("<br />", "\n")
         _set_cache(cache_key, result)
         return result
@@ -201,7 +202,7 @@ def answer_question(context_data: dict, question: str, history: list = None) -> 
     
     try:
         result = _call_groq(client, messages, temperature=0.3)
-        result = re.sub(r"<think>.*?</think>", "", result, flags=re.DOTALL).strip()
+        result = re.sub(r"<think>[\s\S]*?(?:</think>|$)", "", result).strip()
         result = result.replace("<br>", "\n").replace("<br/>", "\n").replace("<br />", "\n")
         return result
     except RateLimitError:
@@ -254,23 +255,23 @@ def generate_tech_brief(tech_name: str, context_data: dict) -> str:
         _truncate_children_brief(safe_context.get("structure", {}).get("root", {}))
 
     prompt = f"""
-    You are an expert technical interviewer. I need an interview brief for the technology: {tech_name}.
+    You are an expert technical interviewer. Create a very short interview brief for the technology: {tech_name}.
     Context of the repository it was found in:
     {json.dumps(safe_context, indent=2)}
     
-    Provide a very brief, easy-to-understand explanation using markdown.
-    **CRITICAL RULES:**
-    1. NEVER use HTML tags like `<br>` or `<br/>`. Use standard markdown `\n\n` for line breaks.
-    2. The ENTIRE response MUST be exactly 2 to 3 short bullet points. Do not write paragraphs.
-    3. Do NOT use section headers (like ### Primary Use Case).
-    4. Focus on what it is, why it was chosen (trade-offs), and how it is used here.
-    5. If the exact implementation details of {tech_name} are NOT in the context, DO NOT GUESS OR INFER. Just state its standard use case.
-    
-    Do not add extra conversational text.
+    CRITICAL FORMATTING RULES:
+    1. Output EXACTLY 2 short bullet points only. No more, no less.
+    2. Each bullet must be 1 to 2 concise sentences:
+       - Bullet 1: What it is and why it was chosen (key benefit/trade-off).
+       - Bullet 2: How it is used in this repository (or its standard role if generic).
+    3. Do NOT write paragraphs, essays, section headers, or intro/outro text.
+    4. Do NOT output any thinking process or internal reasoning.
+    5. NEVER use HTML tags like `<br>` or `<br/>`. Use standard markdown list bullets.
     """
     try:
         result = _call_groq(client, [{"role": "user", "content": prompt}], temperature=0.2)
-        result = re.sub(r"<think>.*?</think>", "", result, flags=re.DOTALL).strip()
+        result = re.sub(r"<think>[\s\S]*?(?:</think>|$)", "", result).strip()
+        result = re.sub(r"(?i)^.*?here'?s a thinking process:?\s*", "", result).strip()
         result = result.replace("<br>", "\n").replace("<br/>", "\n").replace("<br />", "\n")
         _set_cache(cache_key, result)
         return result
