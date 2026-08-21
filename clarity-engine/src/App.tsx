@@ -110,6 +110,7 @@ export default function App() {
     } catch {}
     return initialChatMessages;
   });
+  const [preloadedBriefs, setPreloadedBriefs] = useState<Record<string, string>>({});
 
   // Authentication State
   const [token, setToken] = useState(() => localStorage.getItem('clarity_token') || '');
@@ -294,6 +295,14 @@ export default function App() {
       setActiveScan(updatedScan);
       setSelectedNode(updatedScan.nodes[0] || null);
       setChatMessages(initialChatMessages);
+      // Store preloaded briefs so TechStack page is instant
+      if (data.explain?.briefs) {
+        const cleanBriefs: Record<string, string> = {};
+        for (const [k, v] of Object.entries(data.explain.briefs)) {
+          if (v && typeof v === 'string') cleanBriefs[k] = v;
+        }
+        setPreloadedBriefs(cleanBriefs);
+      }
       // Persist scan so it survives page reloads
       localStorage.setItem('clarity_active_scan', JSON.stringify(updatedScan));
       localStorage.setItem('clarity_chat_messages', JSON.stringify(initialChatMessages));
@@ -633,6 +642,7 @@ export default function App() {
                 <TechStackView
                   stackItems={activeScan.techStack}
                   repoContext={activeScan.context}
+                  preloadedBriefs={preloadedBriefs}
                   onUpdateStackItem={(id) => console.log('Update', id)}
                 />
               </motion.div>

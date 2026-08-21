@@ -249,8 +249,34 @@ async def analyze_repo(req: AnalyzeRequest, db: Session = Depends(get_db), curre
             future_summary = executor.submit(generate_summary, stack_data, ai_structure_data, ai_pipeline_data)
             future_diagram = executor.submit(generate_diagram_data, stack_data, ai_structure_data, ai_pipeline_data)
             
+            # Build brief context (lightweight - just stack + readme for speed)
+            brief_context = {
+                "stack": stack_data,
+                "readme": readme_text[:1000] if readme_text else ""
+            }
+            
+            # Submit all tech briefs in parallel while summary/diagram are also generating
+            all_tech_items = []
+            for cat, items in stack_data.items():
+                if isinstance(items, list):
+                    for item in items:
+                        all_tech_items.append(item)
+            
+            brief_futures = {
+                item: executor.submit(generate_tech_brief, item, brief_context)
+                for item in all_tech_items
+            }
+            
             summary_text = future_summary.result()
             diagram_data = future_diagram.result()
+            
+            # Collect all pre-generated briefs
+            preloaded_briefs = {}
+            for item, future in brief_futures.items():
+                try:
+                    preloaded_briefs[item] = future.result(timeout=15)
+                except Exception:
+                    preloaded_briefs[item] = None  # Will fallback to on-demand fetch
         
         result = {
             "audit": {
@@ -261,6 +287,7 @@ async def analyze_repo(req: AnalyzeRequest, db: Session = Depends(get_db), curre
             "explain": {
                 "summary": summary_text,
                 "stack": stack_data,
+                "briefs": preloaded_briefs,
                 "diagram": diagram_data,
                 "stats": stats_data,
                 "context": {
