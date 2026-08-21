@@ -21,15 +21,8 @@ export const TechStackView: React.FC<TechStackViewProps> = ({
   onUpdateStackItem
 }) => {
   const [expandedIds, setExpandedIds] = useState<string[]>([]);
-  const [briefs, setBriefs] = useState<Record<string, string>>(preloadedBriefs);
+  const [briefs, setBriefs] = useState<Record<string, string>>({});
   const [loadingBriefs, setLoadingBriefs] = useState<Record<string, boolean>>({});
-
-  // Sync preloaded briefs whenever they arrive (e.g. after analysis completes)
-  React.useEffect(() => {
-    if (Object.keys(preloadedBriefs).length > 0) {
-      setBriefs(prev => ({ ...preloadedBriefs, ...prev }));
-    }
-  }, [preloadedBriefs]);
 
   const handleExpand = async (id: string, name: string) => {
     if (expandedIds.includes(id)) {
@@ -37,11 +30,8 @@ export const TechStackView: React.FC<TechStackViewProps> = ({
     } else {
       setExpandedIds([...expandedIds, id]);
       
-      // Use preloaded brief if already available — no API call needed
-      if (briefs[name]) return;
-
-      // Fetch on-demand only if not preloaded
-      if (!loadingBriefs[id]) {
+      // Fetch dynamic brief if not already loaded
+      if (!briefs[id] && !loadingBriefs[id]) {
         setLoadingBriefs(prev => ({ ...prev, [id]: true }));
         try {
           const token = localStorage.getItem('clarity_token');
@@ -59,10 +49,10 @@ export const TechStackView: React.FC<TechStackViewProps> = ({
           
           if (!res.ok) throw new Error('Failed to fetch brief');
           const data = await res.json();
-          setBriefs(prev => ({ ...prev, [name]: data.brief }));
+          setBriefs(prev => ({ ...prev, [id]: data.brief }));
         } catch (error) {
           console.error(error);
-          setBriefs(prev => ({ ...prev, [name]: "Brief unavailable at this time." }));
+          setBriefs(prev => ({ ...prev, [id]: "Brief unavailable at this time." }));
         } finally {
           setLoadingBriefs(prev => ({ ...prev, [id]: false }));
         }
@@ -178,7 +168,7 @@ export const TechStackView: React.FC<TechStackViewProps> = ({
                                 td: ({node, ...props}) => <td className="border border-[var(--color-border)] px-4 py-2 leading-relaxed" {...props} />
                               }}
                             >
-                              {cleanMarkdown(briefs[item.name] || "Brief unavailable.")}
+                              {cleanMarkdown(briefs[item.id] || "Brief unavailable.")}
                             </ReactMarkdown>
                           )}
                         </div>

@@ -252,33 +252,6 @@ async def analyze_repo(req: AnalyzeRequest, db: Session = Depends(get_db), curre
             summary_text = future_summary.result()
             diagram_data = future_diagram.result()
         
-        # Preload briefs non-blocking: attempt up to 5 most important techs
-        # with a strict per-item timeout so this NEVER blocks the response
-        brief_context = {
-            "stack": stack_data,
-            "readme": readme_text[:500] if readme_text else ""
-        }
-        all_tech_items = []
-        for cat, items in stack_data.items():
-            if isinstance(items, list):
-                for item in items:
-                    all_tech_items.append(item)
-        
-        preloaded_briefs = {}
-        # Only preload up to 5 items max to avoid hitting Groq rate limits
-        items_to_preload = all_tech_items[:5]
-        if items_to_preload:
-            with concurrent.futures.ThreadPoolExecutor(max_workers=2) as brief_executor:
-                brief_futures = {
-                    item: brief_executor.submit(generate_tech_brief, item, brief_context)
-                    for item in items_to_preload
-                }
-                for item, future in brief_futures.items():
-                    try:
-                        preloaded_briefs[item] = future.result(timeout=8)
-                    except Exception:
-                        pass  # Skip — will be fetched on-demand when user clicks
-        
         result = {
             "audit": {
                 "env_status": env_status,
@@ -288,7 +261,6 @@ async def analyze_repo(req: AnalyzeRequest, db: Session = Depends(get_db), curre
             "explain": {
                 "summary": summary_text,
                 "stack": stack_data,
-                "briefs": preloaded_briefs,
                 "diagram": diagram_data,
                 "stats": stats_data,
                 "context": {
