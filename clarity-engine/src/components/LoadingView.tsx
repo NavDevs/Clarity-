@@ -51,16 +51,16 @@ interface LoadingViewProps {
 
 export const LoadingView: React.FC<LoadingViewProps> = ({ repoUrl }) => {
   return (
-    <div className="fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-[var(--color-background)] text-[var(--color-foreground)] font-sans bg-noise select-none overflow-hidden">
-      {/* Background ambient glow */}
-      <div className="absolute w-[500px] h-[500px] bg-[var(--color-accent)]/5 rounded-full blur-3xl pointer-events-none" />
+    <div className="fixed inset-0 w-screen h-screen z-[99999] flex flex-col items-center justify-center bg-[var(--color-background)] text-[var(--color-foreground)] font-sans bg-noise select-none overflow-hidden p-4">
+      {/* Background ambient glow centered */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[var(--color-accent)]/5 rounded-full blur-3xl pointer-events-none" />
 
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
         transition={{ duration: 0.3 }}
-        className="flex flex-col items-center w-full max-w-lg px-6 relative z-10"
+        className="flex flex-col items-center justify-center w-full max-w-md my-auto relative z-10"
       >
         {/* Animated Radar Scanner */}
         <div className="relative w-28 h-28 mb-10 flex items-center justify-center">
