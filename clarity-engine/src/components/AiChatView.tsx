@@ -14,37 +14,63 @@ interface AiChatViewProps {
 }
 
 const markdownComponents = {
-  p: ({node, ...props}: any) => <p className="mb-6 last:mb-0 leading-loose" {...props} />,
+  p: ({node, ...props}: any) => <p className="mb-4 last:mb-0 leading-relaxed" {...props} />,
   strong: ({node, ...props}: any) => <strong className="font-bold text-[var(--color-accent)]" {...props} />,
-  ul: ({node, ...props}: any) => <ul className="list-disc pl-6 mb-6 space-y-3 marker:text-[var(--color-accent)]" {...props} />,
-  ol: ({node, ...props}: any) => <ol className="list-decimal pl-6 mb-6 space-y-3 marker:text-[var(--color-accent)] font-mono text-sm" {...props} />,
-  li: ({node, ...props}: any) => <li className="" {...props} />,
-  h1: ({node, ...props}: any) => <h1 className="font-display text-2xl font-bold mb-6 mt-8 text-[var(--color-foreground)] tracking-wide" {...props} />,
-  h2: ({node, ...props}: any) => <h2 className="font-display text-xl font-bold mb-4 mt-8 text-[var(--color-foreground)] tracking-wide border-b border-[var(--color-border)] pb-3" {...props} />,
-  h3: ({node, ...props}: any) => <h3 className="font-mono text-sm font-bold mb-3 mt-6 text-[var(--color-accent)] uppercase tracking-widest" {...props} />,
-  pre: ({node, ...props}: any) => (
-    <div className="bg-[#0A0A0B] border border-[var(--color-border)] p-6 font-mono text-sm overflow-x-auto my-6 rounded-none shadow-inner">
-      <pre {...props} />
+  ul: ({node, ...props}: any) => <ul className="list-disc pl-6 mb-4 space-y-1.5 marker:text-[var(--color-accent)]" {...props} />,
+  ol: ({node, ...props}: any) => <ol className="list-decimal pl-6 mb-4 space-y-1.5 marker:text-[var(--color-accent)] font-mono text-sm" {...props} />,
+  li: ({node, ...props}: any) => <li className="leading-relaxed" {...props} />,
+  h1: ({node, ...props}: any) => <h1 className="font-display text-2xl font-bold mb-4 mt-6 text-[var(--color-foreground)] tracking-wide" {...props} />,
+  h2: ({node, ...props}: any) => <h2 className="font-display text-xl font-bold mb-3 mt-6 text-[var(--color-foreground)] tracking-wide border-b border-[var(--color-border)] pb-2" {...props} />,
+  h3: ({node, ...props}: any) => <h3 className="font-mono text-sm font-bold mb-2 mt-4 text-[var(--color-accent)] uppercase tracking-widest" {...props} />,
+  pre: ({node, children, ...props}: any) => (
+    <div className="bg-[#0A0A0B] border border-[var(--color-border)] my-4 overflow-x-auto shadow-inner">
+      <pre
+        style={{ whiteSpace: 'pre', overflowX: 'auto', margin: 0, padding: '1rem 1.25rem', fontFamily: 'monospace', fontSize: '13px', lineHeight: '1.6' }}
+        {...props}
+      >
+        {children}
+      </pre>
     </div>
   ),
-  code: ({node, className, children, ...props}: any) => (
-    <code className={`font-mono text-[13px] bg-[var(--color-input)] border border-[var(--color-border)] px-1.5 py-0.5 ${className || ''}`} {...props}>{children}</code>
-  ),
+  code: ({node, inline, className, children, ...props}: any) => {
+    const isInline = inline ?? !className;
+    if (isInline) {
+      return (
+        <code
+          className="font-mono text-[12px] bg-[var(--color-input)] border border-[var(--color-border)] px-1.5 py-0.5 text-[var(--color-accent)]"
+          {...props}
+        >
+          {children}
+        </code>
+      );
+    }
+    return (
+      <code
+        style={{ fontFamily: 'monospace', fontSize: '13px', whiteSpace: 'pre', display: 'block' }}
+        className={className}
+        {...props}
+      >
+        {children}
+      </code>
+    );
+  },
   table: ({node, ...props}: any) => (
-    <div className="overflow-x-auto my-6 border border-[var(--color-border)] bg-[var(--color-card)]/50">
-      <table className="w-full text-left border-collapse text-sm" {...props} />
+    <div className="overflow-x-auto my-4 border border-[var(--color-border)]">
+      <table className="w-full text-left border-collapse text-sm" style={{ minWidth: '400px' }} {...props} />
     </div>
   ),
   th: ({node, ...props}: any) => (
-    <th className="border-b border-[var(--color-border)] bg-[#0A0A0B] px-4 py-3 font-mono text-xs font-bold text-[var(--color-accent)] uppercase tracking-wider whitespace-nowrap" {...props} />
+    <th className="border border-[var(--color-border)] bg-[#0A0A0B] px-4 py-2.5 font-mono text-xs font-bold text-[var(--color-accent)] uppercase tracking-wider whitespace-nowrap" {...props} />
   ),
   td: ({node, ...props}: any) => (
-    <td className="border-b border-[var(--color-border)]/60 px-4 py-3 leading-relaxed text-sm align-top" {...props} />
+    <td className="border border-[var(--color-border)]/40 px-4 py-2.5 leading-relaxed text-sm align-top" {...props} />
   ),
   tr: ({node, ...props}: any) => (
-    <tr className="hover:bg-[var(--color-accent)]/5 transition-colors" {...props} />
-  )
+    <tr className="hover:bg-[var(--color-accent)]/5 transition-colors even:bg-[var(--color-muted)]/30" {...props} />
+  ),
+  hr: ({node, ...props}: any) => <hr className="border-[var(--color-border)] my-4" {...props} />,
 };
+
 
 const ChatBubble: React.FC<{ msg: ChatMessage, isLastAi: boolean, onScrollToBottom: () => void }> = ({ msg, isLastAi, onScrollToBottom }) => {
   const [displayedText, setDisplayedText] = useState(isLastAi && msg.sender === 'ai' ? '' : msg.text);
@@ -102,9 +128,9 @@ const ChatBubble: React.FC<{ msg: ChatMessage, isLastAi: boolean, onScrollToBott
         
         {/* Bubble Content */}
         <div 
-          className={`min-w-0 border rounded-none w-fit max-w-full transition-all duration-100 ${
+          className={`min-w-0 border rounded-none w-full transition-all duration-100 ${
             msg.sender === 'user' 
-              ? 'bg-[var(--color-muted)] border-[var(--color-border)]' 
+              ? 'bg-[var(--color-muted)] border-[var(--color-border)] w-fit max-w-full' 
               : 'bg-[var(--color-card)] border-[var(--color-border)]'
           }`}
           style={{ paddingTop, paddingBottom, paddingLeft, paddingRight }}

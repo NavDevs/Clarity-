@@ -1,48 +1,35 @@
 export const cleanMarkdown = (text: string): string => {
   if (!text) return text;
 
-  // 1. Strip any <think>...</think> tags or unclosed <think> blocks
+  // 1. Strip <think>...</think> or unclosed <think> blocks
   let cleaned = text.replace(/<think>[\s\S]*?(<\/think>|$)/gi, '').trim();
 
-  // 2. Un-glue merged table rows, triple/double pipes, and glued delimiters
-  cleaned = cleaned.replace(/\|{3,}/g, '|\n\n|');
-  cleaned = cleaned.replace(/\|{2,}/g, '|\n|');
-  cleaned = cleaned.replace(/\|\s*\|/g, '|\n|');
-
-  // 3. Ensure header delimiter has a closing pipe if missing (e.g. '|---|---' -> '|---|---|')
-  cleaned = cleaned.replace(
-    /\|\s*:?-{2,}:?\s*(?:\|\s*:?-{2,}:?\s*)+(?!\|)/g,
-    (match) => {
-      const m = match.trim();
-      return m.endsWith('|') ? m + '\n' : m + ' |\n';
-    }
-  );
-
-  // 4. Ensure a blank line before any table headers to satisfy remark-gfm
-  cleaned = cleaned.replace(/([^\n])\n(\s*\|.*\|\s*\n\s*\|[-:]+)/g, '$1\n\n$2');
+  // 2. Ensure blank line before every markdown table (header row followed by delimiter)
+  //    This lets remark-gfm detect the table correctly
+  cleaned = cleaned.replace(/(^|\n)(\|[^\n]+\|[ \t]*\n\|[ \t]*[-:| ]+\|)/g, (_, before, table) => {
+    // If before is empty or already has a blank line, don't add another
+    return before === '\n' ? '\n\n' + table : before + '\n\n' + table;
+  });
 
   const lines = cleaned.split('\n');
   const outputLines: string[] = [];
   let inCodeBlock = false;
-  let inTable = false;
 
-  const isTableDelimiter = (l: string): boolean => {
-    const trimmed = l.trim();
-    return /^\|(?:\s*:?-{2,}:?\s*\|)+\s*$/.test(trimmed);
-  };
+  // Helper: is this line a GFM table delimiter? e.g. |---|---|
+  const isTableDelimiter = (l: string): boolean =>
+    /^\|(?:\s*:?-{2,}:?\s*\|)+\s*$/.test(l.trim());
 
-  const isAsciiDiagramLine = (l: string): boolean => {
-    const trimmed = l.trim();
-    return /\+[-=]{3,}\+|[-=]{3,}\+|<-+>|--+>|<--+|\+[-=]{3,}/.test(trimmed);
-  };
+  // Helper: is this line an ASCII diagram? (+---+, <--->, arrows etc.)
+  const isAsciiDiagram = (l: string): boolean =>
+    /\+[-=]{3,}|\+={3,}|<-{2,}>|-{2,}>|<-{2,}/.test(l);
 
   let i = 0;
   while (i < lines.length) {
     const line = lines[i];
     const trimmed = line.trim();
 
-    // Track fenced code blocks (never modify content inside code blocks)
-    if (trimmed.startsWith('```')) {
+    // Track fenced code blocks — never modify content inside
+    if (/^```/.test(trimmed)) {
       inCodeBlock = !inCodeBlock;
       outputLines.push(line);
       i++;
@@ -55,82 +42,100 @@ export const cleanMarkdown = (text: string): string => {
       continue;
     }
 
-    // Check if this starts a TRUE Markdown Table (must have a delimiter row next)
-    if (!inTable && trimmed.startsWith('|') && i + 1 < lines.length && isTableDelimiter(lines[i + 1])) {
-      inTable = true;
-      outputLines.push(line);
-      outputLines.push(lines[i + 1].trim().endsWith('|') ? lines[i + 1].trim() : lines[i + 1].trim() + ' |');
-      i += 2;
-      continue;
-    }
-
-    if (inTable) {
-      if (trimmed === '' || trimmed.startsWith('#') || trimmed.startsWith('```') || isAsciiDiagramLine(line)) {
-        inTable = false;
-        outputLines.push(line);
-      } else if (isTableDelimiter(trimmed)) {
-        outputLines.push(trimmed.endsWith('|') ? trimmed : trimmed + ' |');
-      } else if (trimmed.startsWith('|')) {
-        outputLines.push(trimmed.endsWith('|') ? trimmed : trimmed + ' |');
-      } else {
-        // Multi-line continuation cell inside a table
-        if (outputLines.length > 0) {
-          const lastIdx = outputLines.length - 1;
-          let lastLine = outputLines[lastIdx];
-          if (lastLine.trimEnd().endsWith('|')) {
-            const lastPipe = lastLine.lastIndexOf('|');
-            lastLine = lastLine.substring(0, lastPipe).trimEnd() + '<br />' + trimmed + ' |';
-          } else {
-            lastLine = lastLine + '<br />' + trimmed + ' |';
-          }
-          outputLines[lastIdx] = lastLine;
-        } else {
-          outputLines.push(line);
-        }
-      }
-      i++;
-      continue;
-    }
-
-    // Check for un-fenced ASCII diagrams and wrap them in code blocks
-    if (isAsciiDiagramLine(line)) {
-      const asciiBlock: string[] = [line];
+    // Detect un-fenced ASCII diagram blocks and wrap in ```text ... ```
+    if (isAsciiDiagram(line)) {
+      const block: string[] = [line];
       let j = i + 1;
-      while (
-        j < lines.length &&
-        (isAsciiDiagramLine(lines[j]) ||
-          lines[j].trim().startsWith('|') ||
-          lines[j].trim().startsWith('+') ||
-          lines[j].includes('<-') ||
-          lines[j].includes('->') ||
-          lines[j].trim().startsWith('(') ||
-          lines[j].trim() === '')
-      ) {
-        if (lines[j].trim() === '') {
-          if (
-            j + 1 < lines.length &&
-            (isAsciiDiagramLine(lines[j + 1]) ||
-              lines[j + 1].trim().startsWith('|') ||
-              lines[j + 1].trim().startsWith('+'))
-          ) {
-            asciiBlock.push(lines[j]);
+      while (j < lines.length) {
+        const next = lines[j];
+        // Continue collecting: ASCII lines, pipe-only lines, continuation text, blank separators
+        if (
+          isAsciiDiagram(next) ||
+          /^\s*\|/.test(next) ||
+          /^\s*\+/.test(next) ||
+          next.includes('<-') ||
+          next.includes('->')
+        ) {
+          block.push(next);
+          j++;
+        } else if (next.trim() === '') {
+          // Peek: if what follows blank is still diagram content, include the blank
+          const peek = lines[j + 1] ?? '';
+          if (isAsciiDiagram(peek) || /^\s*\|/.test(peek) || /^\s*\+/.test(peek)) {
+            block.push(next);
             j++;
-            continue;
           } else {
             break;
           }
+        } else {
+          break;
         }
-        asciiBlock.push(lines[j]);
-        j++;
       }
 
-      if (asciiBlock.length >= 2) {
+      if (block.length >= 2) {
         outputLines.push('```text');
-        outputLines.push(...asciiBlock);
+        outputLines.push(...block);
         outputLines.push('```');
         i = j;
         continue;
       }
+    }
+
+    // Detect a GFM table: header row + delimiter on next line
+    if (
+      trimmed.startsWith('|') &&
+      i + 1 < lines.length &&
+      isTableDelimiter(lines[i + 1])
+    ) {
+      // Emit header
+      const header = trimmed.endsWith('|') ? trimmed : trimmed + ' |';
+      outputLines.push(header);
+
+      // Emit delimiter — ensure it ends with |
+      const delim = lines[i + 1].trim();
+      outputLines.push(delim.endsWith('|') ? delim : delim + ' |');
+      i += 2;
+
+      // Emit table body rows
+      while (i < lines.length) {
+        const rowLine = lines[i];
+        const rowTrimmed = rowLine.trim();
+
+        // End table on blank line, heading, code fence
+        if (rowTrimmed === '' || rowTrimmed.startsWith('#') || /^```/.test(rowTrimmed)) {
+          outputLines.push(rowLine);
+          i++;
+          break;
+        }
+
+        if (isTableDelimiter(rowTrimmed)) {
+          // Extra delimiter (shouldn't happen but handle it)
+          outputLines.push(rowTrimmed.endsWith('|') ? rowTrimmed : rowTrimmed + ' |');
+          i++;
+          continue;
+        }
+
+        if (rowTrimmed.startsWith('|')) {
+          // Normal row: ensure it ends with |
+          outputLines.push(rowTrimmed.endsWith('|') ? rowTrimmed : rowTrimmed + ' |');
+        } else {
+          // Continuation text (line doesn't start with |) — merge into prev row's last cell
+          if (outputLines.length > 0) {
+            const lastIdx = outputLines.length - 1;
+            const last = outputLines[lastIdx];
+            if (last.trim().startsWith('|')) {
+              const pipeIdx = last.lastIndexOf('|');
+              outputLines[lastIdx] = last.substring(0, pipeIdx).trimEnd() + ' <br/>' + rowTrimmed + ' |';
+            } else {
+              outputLines.push(rowLine);
+            }
+          } else {
+            outputLines.push(rowLine);
+          }
+        }
+        i++;
+      }
+      continue;
     }
 
     outputLines.push(line);
@@ -139,7 +144,3 @@ export const cleanMarkdown = (text: string): string => {
 
   return outputLines.join('\n');
 };
-
-
-
-
