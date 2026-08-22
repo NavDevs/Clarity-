@@ -14,60 +14,12 @@ import json
 import time
 from typing import Dict, Any
 from groq import Groq, RateLimitError, APIStatusError
-
-MODELS = [
-    "openai/gpt-oss-120b",
-    "groq/compound-mini",
-    "groq/compound",
-    "qwen/qwen3.6-27b",
-]
+from clarity.explain.groq_utils import call_groq, compact_json, shrink_context
 
 FALLBACK_DATA = {
     "nodes": [{"id": "node_1", "label": "Application Core", "filename": ".", "category": "logic"}],
     "edges": []
 }
-
-def _call_groq(client: Groq, messages: list, **kwargs) -> str:
-    """Call Groq API with retry logic and model fallback."""
-    last_error = None
-    
-    for i, model in enumerate(MODELS):
-        for attempt in range(3):
-            try:
-                chat_completion = client.chat.completions.create(
-                    model=model,
-                    messages=messages,
-                    **kwargs
-                )
-                return chat_completion.choices[0].message.content.strip()
-            except RateLimitError as e:
-                last_error = e
-                if attempt < 2:
-                    time.sleep(2 ** attempt)
-                    continue
-                break
-            except APIStatusError as e:
-                last_error = e
-                if e.status_code == 429:
-                    if attempt < 2:
-                        time.sleep(2 ** attempt)
-                        continue
-                    break
-                if e.status_code >= 500:
-                    if attempt < 2:
-                        time.sleep(2 ** attempt)
-                        continue
-                    break
-                break # For 400 (decommissioned), 404, etc., break immediately and try next model
-            except Exception as e:
-                last_error = e
-                break
-        
-        if i < len(MODELS) - 1:
-            time.sleep(1)
-    
-    raise last_error
-
 
 def generate_diagram_data(stack_data: dict, structure_data: dict, pipeline_data: dict = None) -> Dict[str, Any]:
     """
@@ -80,6 +32,8 @@ def generate_diagram_data(stack_data: dict, structure_data: dict, pipeline_data:
         return FALLBACK_DATA
         
     client = Groq(api_key=api_key)
+
+    slim_pipeline = shrink_context({"pipeline": pipeline_data or {}}, level=1).get("pipeline", {})
     
     prompt = f"""
     You are an expert Software Architect analyzing a code repository.
@@ -93,13 +47,13 @@ def generate_diagram_data(stack_data: dict, structure_data: dict, pipeline_data:
     - ONLY include the most vital and necessary blocks (e.g. App Core, Core UI Screens, State Management, Database/API Services). Keep it focused on the big picture.
     
     Tech Stack:
-    {json.dumps(stack_data, indent=2)}
+    {compact_json(stack_data)}
     
     Folder/File Structure (and Flow Logic):
-    {json.dumps(structure_data, indent=2)}
+    {compact_json(structure_data)}
     
     Pipeline Data (Call Graphs & Imports):
-    {json.dumps(pipeline_data or {}, indent=2)}
+    {compact_json(slim_pipeline)}
     
     REQUIREMENTS:
     1. Output strictly valid JSON. Do not include markdown blocks like ```json or any conversational text.
@@ -125,7 +79,7 @@ def generate_diagram_data(stack_data: dict, structure_data: dict, pipeline_data:
     """
     
     try:
-        response_text = _call_groq(
+        response_text = call_groq(
             client, 
             [{"role": "user", "content": prompt}],
             response_format={"type": "json_object"},
