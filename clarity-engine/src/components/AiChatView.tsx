@@ -103,45 +103,37 @@ const ChatBubble: React.FC<{ msg: ChatMessage, isLastAi: boolean, onScrollToBott
     return () => clearInterval(interval);
   }, [msg.text, isLastAi, msg.sender]);
 
-  // Sync padding to the CURRENTLY typed out length of the text!
-  const currentLength = displayedText.length;
-  const paddingTop = Math.min(Math.max(8 + (currentLength * 0.015), 8), 16);
-  const paddingBottom = Math.min(Math.max(8 + (currentLength * 0.015), 8), 16);
-  const paddingLeft = Math.min(Math.max(12 + (currentLength * 0.02), 12), 20);
-  const paddingRight = Math.min(Math.max(12 + (currentLength * 0.02), 12), 20);
-
   return (
-    <div className={`flex w-full mb-4 sm:mb-6 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-      <div className={`flex gap-3 w-full ${msg.sender === 'user' ? 'flex-row-reverse max-w-[85%]' : 'max-w-full'}`}>
+    <div className={`flex w-full mb-3 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+      <div className={`flex gap-3 ${msg.sender === 'user' ? 'flex-row-reverse max-w-[85%]' : 'w-full'}`}>
         {/* Avatar */}
         <div className="shrink-0 mt-1">
           {msg.sender === 'user' ? (
-            <div className="w-9 h-9 flex items-center justify-center bg-[var(--color-accent)] text-[var(--color-background)] rounded-none">
-              <span className="material-symbols-outlined text-[18px]">person</span>
+            <div className="w-8 h-8 flex items-center justify-center bg-[var(--color-accent)] text-[var(--color-background)] rounded-none">
+              <span className="material-symbols-outlined text-[16px]">person</span>
             </div>
           ) : (
-            <div className="w-9 h-9 flex items-center justify-center bg-[var(--color-card)] border border-[var(--color-border)] text-[var(--color-accent)] rounded-none">
-              <span className="material-symbols-outlined text-[18px]">psychology</span>
+            <div className="w-8 h-8 flex items-center justify-center bg-[var(--color-card)] border border-[var(--color-border)] text-[var(--color-accent)] rounded-none">
+              <span className="material-symbols-outlined text-[16px]">psychology</span>
             </div>
           )}
         </div>
-        
+
         {/* Bubble Content */}
-        <div 
-          className={`min-w-0 border rounded-none w-full transition-all duration-100 ${
-            msg.sender === 'user' 
-              ? 'bg-[var(--color-muted)] border-[var(--color-border)] w-fit max-w-full' 
+        <div
+          className={`min-w-0 border rounded-none px-4 py-2 w-fit max-w-full ${
+            msg.sender === 'user'
+              ? 'bg-[var(--color-muted)] border-[var(--color-border)]'
               : 'bg-[var(--color-card)] border-[var(--color-border)]'
           }`}
-          style={{ paddingTop, paddingBottom, paddingLeft, paddingRight }}
         >
-          <div className={`flex items-center gap-2 mb-1.5 sm:mb-2.5 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+          <div className={`flex items-center gap-2 mb-1 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
             <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-muted-foreground)]">
               {msg.sender === 'user' ? 'You' : 'Clarity AI'}
             </span>
           </div>
-          
-          <div className="text-sm md:text-base font-sans text-[var(--color-foreground)] leading-loose">
+
+          <div className="text-sm font-sans text-[var(--color-foreground)] leading-relaxed">
             <div className="prose-like max-w-none">
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
@@ -153,7 +145,7 @@ const ChatBubble: React.FC<{ msg: ChatMessage, isLastAi: boolean, onScrollToBott
             </div>
 
             {msg.codeSnippet && (
-              <div className="bg-[#0A0A0B] border border-[var(--color-border)] p-6 font-mono text-sm overflow-x-auto mt-8 shadow-inner">
+              <div className="bg-[#0A0A0B] border border-[var(--color-border)] p-4 font-mono text-sm overflow-x-auto mt-4 shadow-inner">
                 <pre><code>{msg.codeSnippet}</code></pre>
               </div>
             )}
@@ -163,6 +155,7 @@ const ChatBubble: React.FC<{ msg: ChatMessage, isLastAi: boolean, onScrollToBott
     </div>
   );
 };
+
 
 export const AiChatView: React.FC<AiChatViewProps> = ({
   messages,
