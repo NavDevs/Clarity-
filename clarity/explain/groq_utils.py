@@ -5,18 +5,20 @@ import time
 import copy
 from groq import Groq, RateLimitError, APIStatusError
 
-# Free tier TPM (see https://console.groq.com/docs/rate-limits):
-#   groq/compound-mini & groq/compound → 70K TPM
-#   openai/gpt-oss-120b & qwen/qwen3.6-27b → 8K TPM (single request must stay under ~8K)
+# Free-tier TPM limits (https://console.groq.com/docs/rate-limits):
+#   llama-3.1-8b-instant  → very fast, 6 000 TPM free
+#   gemma2-9b-it          → fast,      14 400 TPM free  ← highest free tier
+#   llama3-8b-8192        → fast fallback
+#   qwen/qwen3.6-27b      → last resort (only 8 000 TPM, slow)
 MODELS = [
-    "groq/compound-mini",
-    "groq/compound",
-    "openai/gpt-oss-120b",
+    "llama-3.1-8b-instant",
+    "gemma2-9b-it",
+    "llama3-8b-8192",
     "qwen/qwen3.6-27b",
 ]
 
-# Safe input budget so 8K-TPM fallback models never reject the request
-MAX_INPUT_TOKENS = 5500
+# Stay well under the 6 000-TPM floor so even the smallest model never 413s
+MAX_INPUT_TOKENS = 4500
 CHARS_PER_TOKEN = 4
 
 CHAT_SYSTEM_RULES = """You are Clarity AI, a senior software architect. Answer using the repository context below.
