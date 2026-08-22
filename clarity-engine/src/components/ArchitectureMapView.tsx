@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 import { ArchitectureNode, ArchitectureEdge, ViewMode } from '../types';
 import { cleanMarkdown } from '../utils/markdownUtils';
 
@@ -594,6 +595,7 @@ export const ArchitectureMapView: React.FC<ArchitectureMapViewProps> = ({
               <div className="prose-like max-w-none">
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
+                  rehypePlugins={[rehypeRaw]}
                   components={{
                     p: ({node, ...props}) => <p className="mb-4 last:mb-0 leading-relaxed" {...props} />,
                     strong: ({node, ...props}) => <strong className="font-bold text-[var(--color-foreground)]" {...props} />,

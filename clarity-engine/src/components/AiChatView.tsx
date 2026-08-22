@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 import { ChatMessage, ArchitectureNode } from '../types';
 import { cleanMarkdown } from '../utils/markdownUtils';
 
@@ -29,9 +30,20 @@ const markdownComponents = {
   code: ({node, className, children, ...props}: any) => (
     <code className={`font-mono text-[13px] bg-[var(--color-input)] border border-[var(--color-border)] px-1.5 py-0.5 ${className || ''}`} {...props}>{children}</code>
   ),
-  table: ({node, ...props}: any) => <div className="overflow-x-auto my-6"><table className="w-full text-left border-collapse border border-[var(--color-border)] text-sm" {...props} /></div>,
-  th: ({node, ...props}: any) => <th className="border border-[var(--color-border)] bg-[#0A0A0B] px-4 py-2 font-mono text-xs font-bold text-[var(--color-accent)] uppercase tracking-wider" {...props} />,
-  td: ({node, ...props}: any) => <td className="border border-[var(--color-border)] px-4 py-2 leading-relaxed" {...props} />
+  table: ({node, ...props}: any) => (
+    <div className="overflow-x-auto my-6 border border-[var(--color-border)] bg-[var(--color-card)]/50">
+      <table className="w-full text-left border-collapse text-sm" {...props} />
+    </div>
+  ),
+  th: ({node, ...props}: any) => (
+    <th className="border-b border-[var(--color-border)] bg-[#0A0A0B] px-4 py-3 font-mono text-xs font-bold text-[var(--color-accent)] uppercase tracking-wider whitespace-nowrap" {...props} />
+  ),
+  td: ({node, ...props}: any) => (
+    <td className="border-b border-[var(--color-border)]/60 px-4 py-3 leading-relaxed text-sm align-top" {...props} />
+  ),
+  tr: ({node, ...props}: any) => (
+    <tr className="hover:bg-[var(--color-accent)]/5 transition-colors" {...props} />
+  )
 };
 
 const ChatBubble: React.FC<{ msg: ChatMessage, isLastAi: boolean, onScrollToBottom: () => void }> = ({ msg, isLastAi, onScrollToBottom }) => {
@@ -107,6 +119,7 @@ const ChatBubble: React.FC<{ msg: ChatMessage, isLastAi: boolean, onScrollToBott
             <div className="prose-like max-w-none">
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
+                rehypePlugins={[rehypeRaw]}
                 components={markdownComponents}
               >
                 {cleanMarkdown(displayedText)}

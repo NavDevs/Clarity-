@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 import { motion, AnimatePresence } from 'motion/react';
 import { TechStackItem } from '../types';
 import { cleanMarkdown } from '../utils/markdownUtils';
@@ -147,6 +148,7 @@ export const TechStackView: React.FC<TechStackViewProps> = ({
                           ) : (
                             <ReactMarkdown
                               remarkPlugins={[remarkGfm]}
+                              rehypePlugins={[rehypeRaw]}
                               components={{
                                 p: ({node, ...props}) => <p className="mb-6 last:mb-0 leading-loose" {...props} />,
                                 strong: ({node, ...props}) => <strong className="font-bold text-[var(--color-foreground)]" {...props} />,
