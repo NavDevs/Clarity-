@@ -4,10 +4,21 @@ export const cleanMarkdown = (text: string): string => {
   // 1. Strip any <think>...</think> tags or unclosed <think> blocks
   let cleaned = text.replace(/<think>[\s\S]*?(<\/think>|$)/gi, '').trim();
 
-  // 2. Fix single-line tables by replacing "| |" with "|\n|"
-  cleaned = cleaned.replace(/\|\s+\|/g, '|\n|');
+  // 2. Un-glue merged table rows, triple/double pipes, and glued delimiters
+  cleaned = cleaned.replace(/\|{3,}/g, '|\n\n|');
+  cleaned = cleaned.replace(/\|{2,}/g, '|\n|');
+  cleaned = cleaned.replace(/\|\s*\|/g, '|\n|');
 
-  // 3. Ensure a blank line before any table headers to satisfy remark-gfm
+  // 3. Ensure header delimiter has a closing pipe if missing (e.g. '|---|---' -> '|---|---|')
+  cleaned = cleaned.replace(
+    /\|\s*:?-{2,}:?\s*(?:\|\s*:?-{2,}:?\s*)+(?!\|)/g,
+    (match) => {
+      const m = match.trim();
+      return m.endsWith('|') ? m + '\n' : m + ' |\n';
+    }
+  );
+
+  // 4. Ensure a blank line before any table headers to satisfy remark-gfm
   cleaned = cleaned.replace(/([^\n])\n(\s*\|.*\|\s*\n\s*\|[-:]+)/g, '$1\n\n$2');
 
   const lines = cleaned.split('\n');
@@ -48,7 +59,7 @@ export const cleanMarkdown = (text: string): string => {
     if (!inTable && trimmed.startsWith('|') && i + 1 < lines.length && isTableDelimiter(lines[i + 1])) {
       inTable = true;
       outputLines.push(line);
-      outputLines.push(lines[i + 1]);
+      outputLines.push(lines[i + 1].trim().endsWith('|') ? lines[i + 1].trim() : lines[i + 1].trim() + ' |');
       i += 2;
       continue;
     }
@@ -57,8 +68,10 @@ export const cleanMarkdown = (text: string): string => {
       if (trimmed === '' || trimmed.startsWith('#') || trimmed.startsWith('```') || isAsciiDiagramLine(line)) {
         inTable = false;
         outputLines.push(line);
-      } else if (trimmed.startsWith('|') && (trimmed.match(/\|/g) || []).length >= 2) {
-        outputLines.push(line);
+      } else if (isTableDelimiter(trimmed)) {
+        outputLines.push(trimmed.endsWith('|') ? trimmed : trimmed + ' |');
+      } else if (trimmed.startsWith('|')) {
+        outputLines.push(trimmed.endsWith('|') ? trimmed : trimmed + ' |');
       } else {
         // Multi-line continuation cell inside a table
         if (outputLines.length > 0) {
@@ -126,6 +139,7 @@ export const cleanMarkdown = (text: string): string => {
 
   return outputLines.join('\n');
 };
+
 
 
 
