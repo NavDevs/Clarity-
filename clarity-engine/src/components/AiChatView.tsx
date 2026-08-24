@@ -179,9 +179,12 @@ export const AiChatView: React.FC<AiChatViewProps> = ({
   const handleScroll = () => {
     if (!chatContainerRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
-    if (scrollTop < lastScrollTop.current) {
+
+    // User scrolled UP manually — stop auto-scroll so they can read history
+    if (scrollTop < lastScrollTop.current - 2) {
       autoScrollEnabled.current = false;
     }
+    // User reached the bottom again — re-enable auto-scroll
     if (scrollHeight - scrollTop - clientHeight < 10) {
       autoScrollEnabled.current = true;
     }
@@ -189,32 +192,38 @@ export const AiChatView: React.FC<AiChatViewProps> = ({
   };
 
   const scrollToBottom = (smooth = false) => {
+    if (!autoScrollEnabled.current) return; // Respect user's scroll position
     if (smooth) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     } else {
-      // Instant jump — no animation
       if (chatContainerRef.current) {
         chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
       }
     }
   };
 
-  // On mount (including tab switch back): instantly jump to bottom — no animation.
+  // On mount / tab switch: instantly jump to bottom (no animation).
   useEffect(() => {
+    autoScrollEnabled.current = true;
     scrollToBottom(false);
   }, []);
 
-  // When a new message arrives or AI is generating: smooth scroll to bottom.
+  // New message or generation tick: scroll only if user hasn't scrolled up.
   useEffect(() => {
     const newCount = messages.length;
     const didNewMessageArrive = newCount > prevMessageCountRef.current;
     prevMessageCountRef.current = newCount;
 
-    if (didNewMessageArrive || isGenerating) {
+    if (didNewMessageArrive) {
+      // Brand new message — always re-enable and scroll
       autoScrollEnabled.current = true;
+      scrollToBottom(true);
+    } else if (isGenerating) {
+      // Generation tick — only scroll if user is still at bottom
       scrollToBottom(true);
     }
   }, [messages, isGenerating]);
+
 
   // Auto-resize textarea as content grows
   const autoResize = () => {
