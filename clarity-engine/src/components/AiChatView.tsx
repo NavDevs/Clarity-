@@ -174,34 +174,37 @@ export const AiChatView: React.FC<AiChatViewProps> = ({
 
   const autoScrollEnabled = useRef(true);
   const lastScrollTop = useRef(0);
-  // Track the message count at the last time this view was mounted (tab switch or first load)
   const prevMessageCountRef = useRef(messages.length);
 
   const handleScroll = () => {
     if (!chatContainerRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
-    
     if (scrollTop < lastScrollTop.current) {
-      // User scrolled up manually — disable auto-scroll
       autoScrollEnabled.current = false;
     }
-    
     if (scrollHeight - scrollTop - clientHeight < 10) {
-      // User reached the bottom — re-enable auto-scroll
       autoScrollEnabled.current = true;
     }
-    
     lastScrollTop.current = scrollTop;
   };
 
-  const scrollToBottom = (force = false) => {
-    if (force || autoScrollEnabled.current) {
-      messagesEndRef.current?.scrollIntoView({ behavior: force ? 'smooth' : 'auto' });
+  const scrollToBottom = (smooth = false) => {
+    if (smooth) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      // Instant jump — no animation
+      if (chatContainerRef.current) {
+        chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+      }
     }
   };
 
-  // Only auto-scroll when a NEW message is actually added (not on tab switch).
-  // On tab switch the message count hasn't changed, so we skip the animation.
+  // On mount (including tab switch back): instantly jump to bottom — no animation.
+  useEffect(() => {
+    scrollToBottom(false);
+  }, []);
+
+  // When a new message arrives or AI is generating: smooth scroll to bottom.
   useEffect(() => {
     const newCount = messages.length;
     const didNewMessageArrive = newCount > prevMessageCountRef.current;
@@ -211,9 +214,7 @@ export const AiChatView: React.FC<AiChatViewProps> = ({
       autoScrollEnabled.current = true;
       scrollToBottom(true);
     }
-    // If just switching back to chat tab: message count is same → do nothing
   }, [messages, isGenerating]);
-
 
   // Auto-resize textarea as content grows
   const autoResize = () => {
@@ -228,7 +229,6 @@ export const AiChatView: React.FC<AiChatViewProps> = ({
     if (inputText.trim() && !isGenerating) {
       onSendMessage(inputText.trim());
       setInputText('');
-      // Reset height after send
       setTimeout(() => {
         if (textareaRef.current) textareaRef.current.style.height = '40px';
       }, 0);
@@ -242,9 +242,12 @@ export const AiChatView: React.FC<AiChatViewProps> = ({
     }
   };
 
-  const contextLabel = activeContextNode 
+  const contextLabel = activeContextNode
     ? `Context: ${activeContextNode.name}`
     : 'Context: Global';
+
+  // Format today's date e.g. "Aug 24, 2026"
+  const todayLabel = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
   return (
     <div className="flex-1 relative flex flex-col min-w-0 h-full overflow-hidden bg-[var(--color-background)] text-[var(--color-foreground)]">
@@ -262,22 +265,22 @@ export const AiChatView: React.FC<AiChatViewProps> = ({
                 Clarity AI
               </h2>
             </div>
-
             <div className="flex items-center gap-4">
             </div>
           </div>
 
           {/* Chat Messages History */}
-          <div 
-            ref={chatContainerRef} 
+          <div
+            ref={chatContainerRef}
             onScroll={handleScroll}
             className="flex-1 overflow-y-auto chat-scroll p-4 sm:p-8 space-y-6 sm:space-y-8 bg-[var(--color-background)]"
           >
             <div className="flex justify-center">
               <span className="font-mono font-semibold text-[10px] text-[var(--color-muted-foreground)] uppercase tracking-widest px-4 py-1 border border-[var(--color-border)] bg-[var(--color-muted)]">
-                Today
+                {todayLabel}
               </span>
             </div>
+
 
             {messages.map((msg, index) => {
               const isLastAi = index === messages.length - 1 && msg.sender === 'ai' && index >= initialMessagesCountRef.current;
