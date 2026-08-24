@@ -174,18 +174,20 @@ export const AiChatView: React.FC<AiChatViewProps> = ({
 
   const autoScrollEnabled = useRef(true);
   const lastScrollTop = useRef(0);
+  // Track the message count at the last time this view was mounted (tab switch or first load)
+  const prevMessageCountRef = useRef(messages.length);
 
   const handleScroll = () => {
     if (!chatContainerRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
     
     if (scrollTop < lastScrollTop.current) {
-      // User scrolled up manually
+      // User scrolled up manually — disable auto-scroll
       autoScrollEnabled.current = false;
     }
     
     if (scrollHeight - scrollTop - clientHeight < 10) {
-      // User reached the bottom
+      // User reached the bottom — re-enable auto-scroll
       autoScrollEnabled.current = true;
     }
     
@@ -198,10 +200,20 @@ export const AiChatView: React.FC<AiChatViewProps> = ({
     }
   };
 
+  // Only auto-scroll when a NEW message is actually added (not on tab switch).
+  // On tab switch the message count hasn't changed, so we skip the animation.
   useEffect(() => {
-    autoScrollEnabled.current = true;
-    scrollToBottom(true);
+    const newCount = messages.length;
+    const didNewMessageArrive = newCount > prevMessageCountRef.current;
+    prevMessageCountRef.current = newCount;
+
+    if (didNewMessageArrive || isGenerating) {
+      autoScrollEnabled.current = true;
+      scrollToBottom(true);
+    }
+    // If just switching back to chat tab: message count is same → do nothing
   }, [messages, isGenerating]);
+
 
   // Auto-resize textarea as content grows
   const autoResize = () => {
