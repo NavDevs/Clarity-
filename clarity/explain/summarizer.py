@@ -36,9 +36,10 @@ def _set_cache(key: str, value: str) -> None:
     """Set cache value with current timestamp."""
     _summary_cache[key] = (value, time.time())
 
-def generate_summary(stack_data: dict, structure_data: dict, pipeline_data: dict) -> str:
+def generate_summary(stack_data: dict, structure_data: dict, pipeline_data: dict, readme_text: str = "") -> str:
     """
-    Sends structured data to Groq API to generate a plain-English explanation.
+    Sends structured data and repository context to Groq API to generate a project-specific,
+    insightful executive summary of moderate length.
     Uses in-memory cache (1hr TTL) to avoid repeated API calls for same repo.
     """
     api_key = os.environ.get("GROQ_API_KEY")
@@ -46,7 +47,7 @@ def generate_summary(stack_data: dict, structure_data: dict, pipeline_data: dict
         return "Explanation unavailable: GROQ_API_KEY not set. Please get a free API key from https://console.groq.com/"
         
     # Check cache first
-    cache_key = _cache_key(stack_data, structure_data, pipeline_data)
+    cache_key = _cache_key(stack_data, structure_data, pipeline_data, readme_text[:500] if readme_text else "")
     cached = _get_cached(cache_key)
     if cached:
         return cached
@@ -54,28 +55,36 @@ def generate_summary(stack_data: dict, structure_data: dict, pipeline_data: dict
     client = Groq(api_key=api_key)
     
     prompt = f"""
-    You are a senior software architect explaining a repository to a junior developer or a non-technical stakeholder.
-    Based on the following structured data extracted from the repository, provide an EXTREMELY short, easy-to-understand briefing.
+    You are an elite software architect providing a crisp, project-specific executive summary of this software repository.
     
-    Requirements:
-    1. Write in simple, easy-to-understand words. Avoid overly dense technical jargon where possible.
-    2. STRICT RULE: Your entire response MUST be exactly 2 to 3 short bullet points. Do not write a long essay.
-    3. Do not include detailed tables or long paragraphs. Just the most critical overview.
-    4. Keep it engaging and clear.
-    5. NEVER use HTML tags like `<br>` or `<br/>`. Always use standard markdown formatting (e.g., `\n\n` for line breaks, markdown lists).
-    
+    CRITICAL GOAL:
+    Do NOT just list tech stack packages or file counts. Instead, explain WHAT THE APPLICATION ACTUALLY DOES, its real-world purpose, architectural data flow, and core features in detail.
+
+    Repository Context:
+    README / Project Overview:
+    {readme_text[:2500] if readme_text else "No README available. Infer the exact project domain from folder names, page routes, and API endpoints."}
+
     Stack:
     {compact_json(stack_data)}
-    
+
     Structure:
     {compact_json(structure_data)}
-    
-    Pipeline:
+
+    Pipeline & Key Functions:
     {compact_json(pipeline_data)}
+    
+    REQUIREMENTS:
+    1. **Format**: Exactly 3 informative, project-specific bullet points of moderate length (2-3 concise sentences each).
+    2. **Bullet 1 — Project Purpose & Problem Solved**: Clearly state what application this is, what problem it solves, and what end-users or developers do with it.
+    3. **Bullet 2 — Architecture & Component Interactions**: Describe the end-to-end data flow between frontend, backend, background workers, databases/queues, and external services.
+    4. **Bullet 3 — Core Features & Workflows**: Detail key domain capabilities (e.g. auth flows, file/data processing, real-time analytics, automated job queues).
+    5. **Style**: Direct, authoritative, and clean. Bold key technologies and components using Markdown.
+    6. **Zero Generic Fluff**: Do NOT mention file counts (e.g. "totaling about 52 files") or raw folder names without explaining their business purpose.
+    7. **NEVER use HTML tags** like `<br>` or `<br/>`. Use standard markdown formatting.
     """
     
     try:
-        result = call_groq(client, [{"role": "user", "content": prompt}])
+        result = call_groq(client, [{"role": "user", "content": prompt}], temperature=0.25)
         result = re.sub(r"<think>[\s\S]*?(?:</think>|$)", "", result).strip()
         _set_cache(cache_key, result)
         return result
@@ -87,6 +96,7 @@ def generate_summary(stack_data: dict, structure_data: dict, pipeline_data: dict
         return f"Explanation unavailable due to API error: {e}"
     except Exception as e:
         return f"Explanation unavailable due to API error: {str(e)}"
+
 
 
 def answer_question(context_data: dict, question: str, history: list = None) -> str:

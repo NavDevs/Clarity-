@@ -62,8 +62,19 @@ def explain(
         console.print("Tracing pipeline...", style="cyan")
         pipeline_data = trace_python_pipeline(repo_path)
         
+        # Read README.md for context
+        readme_text = ""
+        for fname in ["README.md", "readme.md", "README.txt", "readme.txt"]:
+            readme_path = Path(repo_path) / fname
+            if readme_path.exists():
+                try:
+                    readme_text = readme_path.read_text(encoding="utf-8")[:5000]
+                    break
+                except Exception:
+                    pass
+
         console.print("Generating summary...", style="cyan")
-        summary_text = generate_summary(stack_data, structure_data, pipeline_data)
+        summary_text = generate_summary(stack_data, structure_data, pipeline_data, readme_text)
         
         console.print("\n[bold]Project Summary:[/bold]")
         console.print(summary_text)

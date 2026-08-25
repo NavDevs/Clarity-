@@ -246,7 +246,7 @@ async def analyze_repo(req: AnalyzeRequest, db: Session = Depends(get_db), curre
         _truncate_structure(ai_structure_data.get("root", {}))
             
         with concurrent.futures.ThreadPoolExecutor() as executor:
-            future_summary = executor.submit(generate_summary, stack_data, ai_structure_data, ai_pipeline_data)
+            future_summary = executor.submit(generate_summary, stack_data, ai_structure_data, ai_pipeline_data, readme_text)
             future_diagram = executor.submit(generate_diagram_data, stack_data, ai_structure_data, ai_pipeline_data)
             
             summary_text = future_summary.result()
