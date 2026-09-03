@@ -22,7 +22,12 @@ from clarity.database import engine, Base, get_db
 from clarity.models import User, ScanHistory
 from clarity.auth import verify_password, get_password_hash, create_access_token, decode_access_token
 
-Base.metadata.create_all(bind=engine)
+try:
+    Base.metadata.create_all(bind=engine)
+except Exception as e:
+    import logging
+    logging.getLogger("clarity.server").error(f"Error during Base.metadata.create_all: {e}")
+
 
 # Import existing logic
 from clarity.explain.fetcher import fetch_repo, cleanup_repo
