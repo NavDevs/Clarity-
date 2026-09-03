@@ -55,32 +55,28 @@ def generate_summary(stack_data: dict, structure_data: dict, pipeline_data: dict
     client = Groq(api_key=api_key)
     
     prompt = f"""
-    You are an elite software architect providing a crisp, project-specific executive summary of this software repository.
-    
-    CRITICAL GOAL:
-    Do NOT just list tech stack packages or file counts. Instead, explain WHAT THE APPLICATION ACTUALLY DOES, its real-world purpose, architectural data flow, and core features in detail.
+    You are an expert software analyst. Provide a short, highly structured, and glanceable AI summary of this repository.
 
-    Repository Context:
-    README / Project Overview:
-    {readme_text[:2500] if readme_text else "No README available. Infer the exact project domain from folder names, page routes, and API endpoints."}
+    CRITICAL REQUIREMENT:
+    The user wants an easy-to-read, short, and glanceable summary. Do NOT write long dense paragraphs.
 
-    Stack:
-    {compact_json(stack_data)}
+    Format your output EXACTLY with these 3 short, structured bullet points:
 
-    Structure:
-    {compact_json(structure_data)}
+    * **What it does:** [1 crisp, plain-English sentence explaining the core purpose and what problem it solves.]
+    * **Architecture & Flow:** [A concise component flow, e.g. **Frontend** (Next.js/React) ➔ **Backend API** (Express) ➔ **Job Queue** (BullMQ/Redis) ➔ **Worker** (Nodemailer).]
+    * **Key Highlights:** [3 to 4 comma-separated or short key features, e.g. CSV batch upload, automated rate limiting/jitter, Google OAuth login, real-time analytics dashboard.]
 
-    Pipeline & Key Functions:
-    {compact_json(pipeline_data)}
-    
-    REQUIREMENTS:
-    1. **Format**: Exactly 3 informative, project-specific bullet points of moderate length (2-3 concise sentences each).
-    2. **Bullet 1 — Project Purpose & Problem Solved**: Clearly state what application this is, what problem it solves, and what end-users or developers do with it.
-    3. **Bullet 2 — Architecture & Component Interactions**: Describe the end-to-end data flow between frontend, backend, background workers, databases/queues, and external services.
-    4. **Bullet 3 — Core Features & Workflows**: Detail key domain capabilities (e.g. auth flows, file/data processing, real-time analytics, automated job queues).
-    5. **Style**: Direct, authoritative, and clean. Bold key technologies and components using Markdown.
-    6. **Zero Generic Fluff**: Do NOT mention file counts (e.g. "totaling about 52 files") or raw folder names without explaining their business purpose.
-    7. **NEVER use HTML tags** like `<br>` or `<br/>`. Use standard markdown formatting.
+    Repository Info:
+    README: {readme_text[:2000] if readme_text else "Infer the exact project domain from folder names, page routes, and API endpoints."}
+    Stack: {compact_json(stack_data)}
+    Structure: {compact_json(structure_data)}
+    Pipeline: {compact_json(pipeline_data)}
+
+    RULES:
+    1. Maximum 1 to 2 short sentences per bullet point.
+    2. Keep it punchy, clear, and easy to scan in 5 seconds.
+    3. Bold key technologies and components using Markdown.
+    4. NEVER use HTML tags like `<br>` or `<br/>`. Use clean Markdown.
     """
     
     try:
