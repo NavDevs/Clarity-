@@ -338,21 +338,22 @@ def _build_heuristic_graph(stack_data: dict, structure_data: dict,
 
     # --- Flutter / Mobile ---
     if "flutter_mobile_app" in project_types or mobile_stack:
-        mobile_label = f"{'Flutter' if 'Flutter' in mobile_stack else 'Mobile'} UI (Screens)"
+        mobile_label = f"{'Flutter' if 'Flutter' in mobile_stack else 'Mobile'} UI"
         nodes.append({"id": "node_ui", "label": mobile_label, "filename": "lib/screens", "category": "logic"})
 
         state_lib = next((x for x in (stack_data.get("libraries", []) or []) if "provider" in x.lower() or "bloc" in x.lower() or "riverpod" in x.lower()), None)
-        nodes.append({"id": "node_state", "label": f"State Management ({state_lib or 'Providers'})", "filename": "lib/providers", "category": "logic"})
+        state_label = f"State ({state_lib})" if state_lib else "State Management"
+        nodes.append({"id": "node_state", "label": state_label, "filename": "lib/providers", "category": "logic"})
         edges.append({"source": "node_ui", "target": "node_state"})
 
-        nodes.append({"id": "node_svc", "label": "Network Services (HTTP)", "filename": "lib/services", "category": "backend"})
+        nodes.append({"id": "node_svc", "label": "Network Services", "filename": "lib/services", "category": "backend"})
         edges.append({"source": "node_state", "target": "node_svc"})
 
         if db_stack:
-            nodes.append({"id": "node_local", "label": f"Local Storage ({', '.join(db_stack[:2])})", "filename": "lib/storage", "category": "database"})
+            nodes.append({"id": "node_local", "label": f"Local Storage ({db_stack[0]})", "filename": "lib/storage", "category": "database"})
             edges.append({"source": "node_ui", "target": "node_local"})
 
-        nodes.append({"id": "node_api", "label": "External Backend API", "filename": "api", "category": "backend"})
+        nodes.append({"id": "node_api", "label": "External API", "filename": "api", "category": "backend"})
         edges.append({"source": "node_svc", "target": "node_api"})
         return {"nodes": nodes, "edges": edges}
 
@@ -360,17 +361,17 @@ def _build_heuristic_graph(stack_data: dict, structure_data: dict,
     center_id = "node_backend"
 
     if frontend_stack:
-        f_label = f"Frontend ({', '.join(frontend_stack[:2])})"
+        f_label = f"Frontend ({frontend_stack[0]})"
         f_folder = next((x["name"] for x in top_folders if x["name"].lower() in ("frontend", "client", "web", "ui")), "src")
         nodes.append({"id": "node_frontend", "label": f_label, "filename": f_folder, "category": "logic"})
         edges.append({"source": "node_frontend", "target": "node_backend"})
 
-    b_label = f"Backend API ({', '.join(backend_stack[:2])})" if backend_stack else "API & Core Logic"
+    b_label = f"Backend API ({backend_stack[0]})" if backend_stack else "API & Core Logic"
     b_folder = next((x["name"] for x in top_folders if x["name"].lower() in ("backend", "server", "api", "src")), "src")
     nodes.append({"id": "node_backend", "label": b_label, "filename": b_folder, "category": "backend"})
 
     if db_stack:
-        db_label = f"Database ({', '.join(db_stack[:2])})"
+        db_label = f"Database ({db_stack[0]})"
         nodes.append({"id": "node_db", "label": db_label, "filename": "db", "category": "database"})
         edges.append({"source": "node_backend", "target": "node_db"})
 
@@ -384,11 +385,11 @@ def _build_heuristic_graph(stack_data: dict, structure_data: dict,
         edges.append({"source": "node_backend", "target": "node_worker"})
 
     if ai_stack:
-        nodes.append({"id": "node_ai", "label": f"AI / ML Layer ({', '.join(ai_stack[:1])})", "filename": "ai", "category": "tools"})
+        nodes.append({"id": "node_ai", "label": f"AI Layer ({ai_stack[0]})", "filename": "ai", "category": "tools"})
         edges.append({"source": "node_backend", "target": "node_ai"})
 
     if integrations:
-        ext_label = f"External Services ({', '.join(integrations[:2])})"
+        ext_label = f"External Services"
         nodes.append({"id": "node_ext", "label": ext_label, "filename": "external", "category": "infra"})
         edges.append({"source": "node_backend", "target": "node_ext"})
 
@@ -495,38 +496,31 @@ Produce a JSON architecture map with "nodes" and "edges".
 
 STRICT RULES — VIOLATING ANY RULE MAKES THE OUTPUT USELESS:
 
-1. SPECIFIC NAMES REQUIRED: Every node label MUST mention the ACTUAL technology or folder.
-   ✅ GOOD: "Express.js API Server", "Flutter UI (lib/screens)", "MongoDB via Mongoose", "BullMQ Worker"
-   ❌ BAD:  "API Server", "Backend API", "Client UI", "Database Layer" (too generic — rejected)
+1. SPECIFIC NAMES REQUIRED: Every node `label` MUST mention the ACTUAL technology but be SHORT (max 3-4 words).
+   ✅ GOOD: "Express API", "Flutter UI", "MongoDB Database", "BullMQ Worker", "React Router"
+   ❌ BAD:  "API Server", "Backend API" (too generic)
+   ❌ BAD:  "Express API (server/src)" (DO NOT put paths in the label!)
 
-2. MAP REAL FOLDERS: Use the ACTUAL folder names from the "Detected Signals" above.
-   ✅ GOOD: "filename": "server/routes"  (if that folder exists)
-   ❌ BAD:  "filename": "backend"         (if the actual folder is "server")
+2. MAP REAL FOLDERS: Put the actual folder path ONLY in the `filename` field.
+   ✅ GOOD: "filename": "server/routes"
+   ❌ BAD:  "filename": "backend" (if the actual folder is "server")
 
 3. DOCKER SERVICES TAKE PRIORITY: If Docker services were detected, each service MUST
    become its own node. Use the actual service name as the label.
 
-4. MONOREPO AWARENESS: If monorepo packages were detected, create a node for each
-   major package/app (client, admin, api, etc.).
+4. NODE COUNT: Generate between 4 and 8 nodes. Small projects: 4-5. Large/complex: 6-8.
+   Do NOT add nodes for trivial utilities (utils, helpers, config, animations).
 
-5. NODE COUNT: Generate between 4 and 9 nodes. Small projects: 4-5. Large/complex: 7-9.
-   Do NOT add nodes for trivial utilities (utils, helpers, config) unless they are
-   a distinct architectural concern.
+5. CATEGORIES (must be one of): logic | database | backend | tools | validation | infra
 
-6. CATEGORIES (must be one of): logic | database | backend | tools | validation | infra
+6. ALL NODES MUST BE CONNECTED: Every node must appear in at least one edge.
 
-7. ALL NODES MUST BE CONNECTED: Every node must appear in at least one edge.
-
-8. IMPORTANT FOR MOBILE APPS (Flutter/React Native/Android/iOS):
-   Do NOT generate a "Client UI → API Server → Database" web pattern.
-   Instead map: Screens → State Management → Services → Platform Layer → External API
-
-9. RETURN ONLY VALID JSON — no markdown, no explanation, no ```json fences. Just the raw object.
+7. RETURN ONLY VALID JSON — no markdown, no explanation, no ```json fences. Just the raw object.
 
 Output format:
 {{
   "nodes": [
-    {{"id": "node_1", "label": "<SPECIFIC REAL NAME>", "filename": "<ACTUAL FOLDER/FILE>", "category": "<CATEGORY>"}}
+    {{"id": "node_1", "label": "Express API", "filename": "server/src", "category": "backend"}}
   ],
   "edges": [
     {{"source": "node_1", "target": "node_2"}}
