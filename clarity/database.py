@@ -3,24 +3,24 @@ database.py — Clarity's resilient database layer.
 
 Design contract:
   1. FastAPI ALWAYS starts instantly — no blocking at import time.
-  2. The engine is created once; SQLAlchemy's connection pool handles reconnects.
-  3. get_db() retries indefinitely until Supabase wakes up (with a cap to avoid
-     hanging user requests forever). If it genuinely cannot connect after the cap,
-     it raises an HTTPException(503) so the user gets a clear error and the server
-     stays alive.
-  4. pool_pre_ping=True means every borrowed connection is tested before use —
-     stale connections are automatically replaced, not handed to your code.
+  2. pool_pre_ping=True means every borrowed connection is tested before use —
+     stale/dropped connections are automatically replaced.
+  3. get_db() does a single quick ping. If it fails it raises HTTP 503
+     immediately so the FRONTEND can retry with friendly UX, instead of
+     blocking the request thread for a long time.
+  4. pool_recycle prevents Supabase's 5-min idle timeout from leaving stale
+     connections in the pool.
 """
 
 import os
 import logging
-import time
 
 from fastapi import HTTPException
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 logger = logging.getLogger("clarity.database")
+
 
 # ---------------------------------------------------------------------------
 # Engine — created once at import, no connection attempted yet
@@ -45,80 +45,45 @@ def _build_engine(url: str):
 
 
 DB_URL = os.environ.get("DATABASE_URL", "sqlite:///./clarity.db")
-engine = _build_engine(DB_URL)
+engine  = _build_engine(DB_URL)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 
 # ---------------------------------------------------------------------------
-# get_db — retry until Supabase wakes, never crash the server
+# get_db — fast fail with 503 so the frontend can retry gracefully
 # ---------------------------------------------------------------------------
-
-_MAX_WAIT_SECONDS = 60   # Total time we'll wait for Supabase to wake (free tier ~30s)
-_RETRY_INTERVAL   = 5    # Seconds between attempts
-
 
 def get_db():
     """
     FastAPI dependency that yields a database session.
 
     Behaviour:
-    - SQLite → yields immediately (local dev / CI).
-    - Postgres → retries for up to _MAX_WAIT_SECONDS if Supabase is asleep.
-    - After _MAX_WAIT_SECONDS of failure → returns HTTP 503 to the caller.
-      The server process itself NEVER crashes from a database error.
+    - SQLite  → yields immediately (local dev).
+    - Postgres → tries once. If Supabase is still asleep it returns HTTP 503
+                 instantly so the frontend can show a friendly "waking up"
+                 banner and retry after a few seconds.
+                 The server process itself NEVER crashes.
     """
-    # SQLite never needs retries
-    if DB_URL.startswith("sqlite"):
-        db = SessionLocal()
-        try:
-            yield db
-        finally:
-            db.close()
-        return
-
-    # Postgres — retry loop
-    deadline = time.monotonic() + _MAX_WAIT_SECONDS
-    attempt = 0
-
-    while True:
-        attempt += 1
-        db = SessionLocal()
-        try:
-            # pool_pre_ping handles stale connections, but we do an explicit
-            # ping here so we know the DB is truly reachable before yielding.
+    db = SessionLocal()
+    try:
+        # Quick reachability check (pool_pre_ping also does this internally,
+        # but being explicit lets us convert the error to a clean 503)
+        if not DB_URL.startswith("sqlite"):
             db.execute(text("SELECT 1"))
-            # ✅ Connection is live — hand the session to the endpoint
-            yield db
-            return                              # normal exit after endpoint finishes
-        except Exception as e:
+        yield db
+    except HTTPException:
+        raise
+    except Exception as e:
+        err_short = str(e).splitlines()[-1] if str(e).splitlines() else str(e)
+        logger.warning(f"[DB] Connection unavailable: {err_short}")
+        raise HTTPException(
+            status_code=503,
+            detail="db_waking_up",   # frontend reads this specific key
+        )
+    finally:
+        try:
             db.close()
-            remaining = deadline - time.monotonic()
-            err_short  = str(e).splitlines()[-1] if str(e).splitlines() else str(e)
-
-            if remaining > 0:
-                wait = min(_RETRY_INTERVAL, remaining)
-                logger.warning(
-                    f"[DB] Attempt {attempt} failed ({err_short}). "
-                    f"Retrying in {wait:.0f}s ({remaining:.0f}s remaining)…"
-                )
-                time.sleep(wait)
-            else:
-                # We've waited long enough — tell the user, keep the server alive
-                logger.error(
-                    f"[DB] Could not connect after {_MAX_WAIT_SECONDS}s. "
-                    f"Returning 503 to caller. Last error: {err_short}"
-                )
-                raise HTTPException(
-                    status_code=503,
-                    detail=(
-                        "The database is temporarily unavailable. "
-                        "Please try again in a moment — it is waking up."
-                    ),
-                )
-        finally:
-            try:
-                db.close()
-            except Exception:
-                pass
+        except Exception:
+            pass
