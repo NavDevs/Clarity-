@@ -62,68 +62,59 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [deletingIds, setDeletingIds] = useState<string[]>([]);
-  const retryRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
-  const retryCountRef = React.useRef(0);
 
   // Derived Stats
   const totalScans = history.length;
+  
   const uniqueRepos = new Set(history.map(scan => scan.repo_url)).size;
+  
   const totalSecrets = history.reduce((acc, curr) => {
     let count = 0;
-    try { if (curr.scan_data?.audit?.secrets) count += curr.scan_data.audit.secrets.length; } catch {}
+    try {
+      const data = curr.scan_data;
+      if (data.audit?.secrets) count += data.audit.secrets.length;
+    } catch(e) {}
     return acc + count;
   }, 0);
 
-  const fetchHistory = async (isRetry = false) => {
-    if (!token) { setLoadingHistory(false); setHistoryError('Not logged in'); return; }
-
-    if (!isRetry) {
-      setLoadingHistory(true);
-      setHistoryError(null);
-      retryCountRef.current = 0;
+  const fetchHistory = async () => {
+    if (!token) {
+      setLoadingHistory(false);
+      setHistoryError('Not logged in');
+      return;
     }
-
     try {
+      setLoadingHistory(true);
+      setHistoryError('');
       const response = await fetch(`${API_BASE}/api/history`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
-
       if (response.ok) {
         const data = await response.json();
         setHistory(data);
-        setLoadingHistory(false);
-        retryCountRef.current = 0;
-        return;
-      }
-
-      if (response.status === 401 && onLogout) { onLogout(); return; }
-
-      if (response.status === 503) {
-        // DB is waking up — stay on "Loading history..." and retry silently
-        retryCountRef.current += 1;
-        if (retryCountRef.current <= 12) {
-          if (retryRef.current) clearTimeout(retryRef.current);
-          retryRef.current = setTimeout(() => fetchHistory(true), 6000);
-        } else {
-          setLoadingHistory(false);
-          setHistoryError('Could not load your scans. Please refresh the page.');
+      } else {
+        if (response.status === 401 && onLogout) {
+          // Token expired or secret key changed
+          onLogout();
+          return;
         }
-        return;
+        const errText = await response.text();
+        setHistoryError(`API error ${response.status}: ${errText}`);
+        console.error('History fetch failed:', response.status, errText);
       }
-
+    } catch (error: any) {
+      setHistoryError(`Network error: ${error.message}`);
+      console.error("Failed to load history:", error);
+    } finally {
       setLoadingHistory(false);
-      setHistoryError('Could not load history. Please refresh.');
-    } catch {
-      setLoadingHistory(false);
-      setHistoryError('Network error. Please check your connection.');
     }
   };
 
   useEffect(() => {
     fetchHistory();
-    return () => { if (retryRef.current) clearTimeout(retryRef.current); };
   }, [token, historyRefreshKey]);
-
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -250,8 +241,8 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
             <div className="text-[var(--color-muted-foreground)] font-mono text-sm animate-pulse">Loading history...</div>
           ) : historyError ? (
             <div className="p-8 border border-red-500/30 border-dashed text-center">
-              <p className="text-red-400 font-mono text-xs mb-3">{historyError}</p>
-              <button onClick={() => fetchHistory()} className="font-mono text-xs text-[var(--color-accent)] underline">Retry</button>
+              <p className="text-red-400 font-mono text-xs mb-3">Error loading history: {historyError}</p>
+              <button onClick={fetchHistory} className="font-mono text-xs text-[var(--color-accent)] underline">Retry</button>
             </div>
           ) : history.length === 0 ? (
             <div className="p-8 border border-[var(--color-border)] border-dashed text-center">
