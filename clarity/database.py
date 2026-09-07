@@ -1,5 +1,6 @@
 import os
 import logging
+import time
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 
@@ -12,24 +13,39 @@ def _init_engine(url: str):
     if url.startswith("sqlite"):
         connect_args = {"check_same_thread": False}
     else:
-        # 5 second connection timeout for external postgres
-        connect_args = {"connect_timeout": 5}
+        # Higher timeout for external databases
+        connect_args = {"connect_timeout": 15}
     
     return create_engine(url, connect_args=connect_args, pool_pre_ping=True)
 
 DB_URL = os.environ.get("DATABASE_URL", "sqlite:///./clarity.db")
 
-try:
-    engine = _init_engine(DB_URL)
-    # Test connection if using an external database
-    if not DB_URL.startswith("sqlite"):
-        with engine.connect() as conn:
-            pass
-    logger.info("Successfully connected to database.")
-except Exception as e:
-    logger.error(f"Failed to connect to primary DATABASE_URL ({DB_URL}): {e}. Falling back to local SQLite.")
-    DB_URL = "sqlite:///./clarity.db"
-    engine = _init_engine(DB_URL)
+engine = _init_engine(DB_URL)
+
+# Attempt to connect to the database, with retries for Supabase wake-up
+max_retries = 12
+retry_delay = 5
+
+for attempt in range(max_retries):
+    try:
+        if not DB_URL.startswith("sqlite"):
+            with engine.connect() as conn:
+                pass
+        logger.info("Successfully connected to database.")
+        break
+    except Exception as e:
+        if attempt < max_retries - 1:
+            logger.warning(f"Database connection failed (attempt {attempt + 1}/{max_retries}), retrying in {retry_delay}s... ({str(e).splitlines()[-1] if str(e).splitlines() else e})")
+            time.sleep(retry_delay)
+        else:
+            logger.error(f"Failed to connect to database after {max_retries} attempts.")
+            if os.environ.get("ENVIRONMENT") == "development" or "sqlite" in DB_URL:
+                logger.warning("Falling back to local SQLite for development.")
+                DB_URL = "sqlite:///./clarity.db"
+                engine = _init_engine(DB_URL)
+            else:
+                # In production, we should raise the error rather than wiping user data with a fresh SQLite db
+                raise e
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
