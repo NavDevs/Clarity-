@@ -496,26 +496,28 @@ Produce a JSON architecture map with "nodes" and "edges".
 
 STRICT RULES — VIOLATING ANY RULE MAKES THE OUTPUT USELESS:
 
-1. SPECIFIC NAMES REQUIRED: Every node `label` MUST mention the ACTUAL technology but be SHORT (max 3-4 words).
-   ✅ GOOD: "Express API", "Flutter UI", "MongoDB Database", "BullMQ Worker", "React Router"
-   ❌ BAD:  "API Server", "Backend API" (too generic)
+1. EXTRACT BUSINESS LOGIC (CRITICAL): Do NOT just output a basic "Frontend → Backend → Database" map. That is too simple. You MUST break the application down into its core logical blocks based on the PIPELINE and FOLDERS.
+   - For Backend: Identify specific layers like "Auth Middleware", "Payment Service", "Websocket Manager", "Email Scheduler", or "Data Access Layer".
+   - For Frontend: Identify "State Management (Redux/Zustand)", "Router", or "API Client".
+
+2. SPECIFIC NAMES REQUIRED: Every node `label` MUST mention the ACTUAL technology or specific feature, but be SHORT (max 3-4 words).
+   ✅ GOOD: "Auth Middleware", "BullMQ Worker", "Redux Store", "Stripe Payment Service", "Express Router"
+   ❌ BAD:  "API Server", "Backend" (too generic)
    ❌ BAD:  "Express API (server/src)" (DO NOT put paths in the label!)
 
-2. MAP REAL FOLDERS: Put the actual folder path ONLY in the `filename` field.
-   ✅ GOOD: "filename": "server/routes"
+3. MAP REAL FOLDERS: Put the actual folder path ONLY in the `filename` field.
+   ✅ GOOD: "filename": "server/middlewares/auth.js"
    ❌ BAD:  "filename": "backend" (if the actual folder is "server")
 
-3. DOCKER SERVICES TAKE PRIORITY: If Docker services were detected, each service MUST
-   become its own node. Use the actual service name as the label.
+4. DOCKER SERVICES: If Docker services were detected, include them as foundation nodes.
 
-4. NODE COUNT: Generate between 4 and 8 nodes. Small projects: 4-5. Large/complex: 6-8.
-   Do NOT add nodes for trivial utilities (utils, helpers, config, animations).
+5. NODE COUNT: Generate between 6 and 10 nodes to capture the true complexity of the logic.
 
-5. CATEGORIES (must be one of): logic | database | backend | tools | validation | infra
+6. CATEGORIES (must be one of): logic | database | backend | tools | validation | infra
 
-6. ALL NODES MUST BE CONNECTED: Every node must appear in at least one edge.
+7. ALL NODES MUST BE CONNECTED: Every node must appear in at least one edge. Edges represent data flow or dependencies.
 
-7. RETURN ONLY VALID JSON — no markdown, no explanation, no ```json fences. Just the raw object.
+8. RETURN ONLY VALID JSON — no markdown, no explanation, no ```json fences. Just the raw object.
 
 Output format:
 {{
