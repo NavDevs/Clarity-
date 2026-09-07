@@ -62,36 +62,27 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [deletingIds, setDeletingIds] = useState<string[]>([]);
-  const [dbWakingUp, setDbWakingUp] = useState(false);
   const retryRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const retryCountRef = React.useRef(0);
 
   // Derived Stats
   const totalScans = history.length;
-  
   const uniqueRepos = new Set(history.map(scan => scan.repo_url)).size;
-  
   const totalSecrets = history.reduce((acc, curr) => {
     let count = 0;
-    try {
-      const data = curr.scan_data;
-      if (data.audit?.secrets) count += data.audit.secrets.length;
-    } catch(e) {}
+    try { if (curr.scan_data?.audit?.secrets) count += curr.scan_data.audit.secrets.length; } catch {}
     return acc + count;
   }, 0);
 
   const fetchHistory = async (isRetry = false) => {
-    if (!token) {
-      setLoadingHistory(false);
-      setHistoryError('Not logged in');
-      return;
-    }
+    if (!token) { setLoadingHistory(false); setHistoryError('Not logged in'); return; }
+
     if (!isRetry) {
       setLoadingHistory(true);
       setHistoryError(null);
-      setDbWakingUp(false);
       retryCountRef.current = 0;
     }
+
     try {
       const response = await fetch(`${API_BASE}/api/history`, {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -101,49 +92,36 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
         const data = await response.json();
         setHistory(data);
         setLoadingHistory(false);
-        setDbWakingUp(false);
         retryCountRef.current = 0;
         return;
       }
 
-      if (response.status === 401 && onLogout) {
-        onLogout();
-        return;
-      }
+      if (response.status === 401 && onLogout) { onLogout(); return; }
 
       if (response.status === 503) {
-        // Database is waking up — show friendly banner + auto-retry
+        // DB is waking up — stay on "Loading history..." and retry silently
         retryCountRef.current += 1;
         if (retryCountRef.current <= 12) {
-          setDbWakingUp(true);
-          setLoadingHistory(false);
           if (retryRef.current) clearTimeout(retryRef.current);
           retryRef.current = setTimeout(() => fetchHistory(true), 6000);
         } else {
-          // Gave up after ~72 seconds
-          setDbWakingUp(false);
           setLoadingHistory(false);
-          setHistoryError('The database took too long to wake up. Please refresh the page.');
+          setHistoryError('Could not load your scans. Please refresh the page.');
         }
         return;
       }
 
-      const errText = await response.text();
-      setHistoryError(`Failed to load history (${response.status}). Please refresh.`);
-      console.error('History fetch failed:', response.status, errText);
-    } catch (error: any) {
-      setHistoryError(`Network error: ${error.message}`);
-      console.error('Failed to load history:', error);
-    } finally {
-      if (!dbWakingUp) setLoadingHistory(false);
+      setLoadingHistory(false);
+      setHistoryError('Could not load history. Please refresh.');
+    } catch {
+      setLoadingHistory(false);
+      setHistoryError('Network error. Please check your connection.');
     }
   };
 
   useEffect(() => {
     fetchHistory();
-    return () => {
-      if (retryRef.current) clearTimeout(retryRef.current);
-    };
+    return () => { if (retryRef.current) clearTimeout(retryRef.current); };
   }, [token, historyRefreshKey]);
 
 
@@ -270,24 +248,6 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
           
           {loadingHistory ? (
             <div className="text-[var(--color-muted-foreground)] font-mono text-sm animate-pulse">Loading history...</div>
-          ) : dbWakingUp ? (
-            <div className="p-8 border border-[var(--color-border)] border-dashed flex flex-col items-center gap-4">
-              <div className="flex items-center gap-3">
-                <motion.span
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
-                  className="material-symbols-outlined text-[20px] text-[var(--color-accent)]"
-                >
-                  sync
-                </motion.span>
-                <p className="text-[var(--color-muted-foreground)] font-mono text-sm">
-                  Database is waking up… fetching your scans in a moment.
-                </p>
-              </div>
-              <p className="text-[var(--color-muted-foreground)] font-mono text-[10px] opacity-60">
-                (Free-tier databases sleep after inactivity — this takes ~30 seconds)
-              </p>
-            </div>
           ) : historyError ? (
             <div className="p-8 border border-red-500/30 border-dashed text-center">
               <p className="text-red-400 font-mono text-xs mb-3">{historyError}</p>
