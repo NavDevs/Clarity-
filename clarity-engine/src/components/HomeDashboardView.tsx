@@ -77,44 +77,71 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
     return acc + count;
   }, 0);
 
-  const fetchHistory = async () => {
+  const retryRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const retryCountRef = React.useRef(0);
+
+  const fetchHistory = async (isRetry = false) => {
     if (!token) {
       setLoadingHistory(false);
       setHistoryError('Not logged in');
       return;
     }
-    try {
+
+    if (!isRetry) {
       setLoadingHistory(true);
-      setHistoryError('');
+      setHistoryError(null);
+      retryCountRef.current = 0;
+    }
+
+    try {
       const response = await fetch(`${API_BASE}/api/history`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        headers: { 'Authorization': `Bearer ${token}` }
       });
+
       if (response.ok) {
         const data = await response.json();
         setHistory(data);
-      } else {
-        if (response.status === 401 && onLogout) {
-          // Token expired or secret key changed
-          onLogout();
-          return;
-        }
-        const errText = await response.text();
-        setHistoryError(`API error ${response.status}: ${errText}`);
-        console.error('History fetch failed:', response.status, errText);
+        setLoadingHistory(false);
+        retryCountRef.current = 0;
+        return;
       }
-    } catch (error: any) {
-      setHistoryError(`Network error: ${error.message}`);
-      console.error("Failed to load history:", error);
-    } finally {
+
+      if (response.status === 401 && onLogout) {
+        onLogout();
+        return;
+      }
+
+      // 503 = server waking up. Retry silently, keep showing "Loading history..."
+      if (response.status === 503) {
+        retryCountRef.current += 1;
+        if (retryCountRef.current <= 15) {
+          retryRef.current = setTimeout(() => fetchHistory(true), 6000);
+        } else {
+          setLoadingHistory(false);
+          setHistoryError('Could not connect. Please refresh the page.');
+        }
+        return;
+      }
+
       setLoadingHistory(false);
+      setHistoryError('Could not load history. Please refresh.');
+    } catch {
+      // Network error = server is cold starting. Retry silently.
+      retryCountRef.current += 1;
+      if (retryCountRef.current <= 15) {
+        retryRef.current = setTimeout(() => fetchHistory(true), 6000);
+      } else {
+        setLoadingHistory(false);
+        setHistoryError('Server took too long to respond. Please refresh the page.');
+      }
     }
   };
 
   useEffect(() => {
     fetchHistory();
+    return () => { if (retryRef.current) clearTimeout(retryRef.current); };
   }, [token, historyRefreshKey]);
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
