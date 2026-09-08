@@ -16,6 +16,8 @@ def _init_engine(url: str):
         url = url.replace("postgres://", "postgresql://", 1)
     # Strip surrounding quotes if user accidentally added them in Render
     url = url.strip().strip('"').strip("'")
+    # Remove pgbouncer=true — this is a Prisma-only param, not valid for SQLAlchemy
+    url = url.replace("?pgbouncer=true", "").replace("&pgbouncer=true", "")
 
     if url.startswith("sqlite"):
         connect_args = {"check_same_thread": False}
@@ -29,6 +31,8 @@ def _init_engine(url: str):
             pool_recycle=300,
             pool_size=5,
             max_overflow=10,
+            # Required for Supabase transaction-mode pooler (pgbouncer)
+            execution_options={"prepared_statement_cache_size": 0},
         ), url
 
 
