@@ -8,47 +8,52 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 
 logger = logging.getLogger("clarity.database")
 
-# ---------------------------------------------------------------------------
-# Engine Configuration
-# ---------------------------------------------------------------------------
 
 def _init_engine(url: str):
+    if not url:
+        url = "sqlite:///./clarity.db"
     if url.startswith("postgres://"):
         url = url.replace("postgres://", "postgresql://", 1)
-    
+    # Strip surrounding quotes if user accidentally added them in Render
+    url = url.strip().strip('"').strip("'")
+
     if url.startswith("sqlite"):
         connect_args = {"check_same_thread": False}
+        return create_engine(url, connect_args=connect_args), url
     else:
-        # Give Supabase plenty of time to respond
         connect_args = {"connect_timeout": 15}
-    
-    return create_engine(
-        url,
-        connect_args=connect_args,
-        pool_pre_ping=True,      # Tests connection before using it
-        pool_recycle=300,        # Recycles connections before Supabase drops them
-        pool_size=5,
-        max_overflow=10,
-    )
+        return create_engine(
+            url,
+            connect_args=connect_args,
+            pool_pre_ping=True,
+            pool_recycle=300,
+            pool_size=5,
+            max_overflow=10,
+        ), url
 
-DB_URL = os.environ.get("DATABASE_URL", "sqlite:///./clarity.db")
-engine = _init_engine(DB_URL)
+
+# ---------------------------------------------------------------------------
+# Try to create the engine — if DATABASE_URL is malformed, fall back to SQLite
+# ---------------------------------------------------------------------------
+_raw_url = os.environ.get("DATABASE_URL", "sqlite:///./clarity.db")
+
+try:
+    engine, DB_URL = _init_engine(_raw_url)
+    logger.info(f"Database engine created for: {'Postgres (Supabase)' if 'supabase' in _raw_url or 'postgres' in _raw_url.lower() else 'SQLite'}")
+except Exception as e:
+    logger.error(f"DATABASE_URL is invalid and could not be parsed: {e}")
+    logger.warning("Falling back to SQLite — fix your DATABASE_URL in Render environment variables!")
+    DB_URL = "sqlite:///./clarity.db"
+    engine, DB_URL = _init_engine(DB_URL)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
-# ---------------------------------------------------------------------------
-# Connection with Retry Logic (Moved to get_db so server doesn't crash on boot)
-# ---------------------------------------------------------------------------
 
 def get_db():
-    """
-    Yields a database session. On the first real request this will attempt to
-    connect to Supabase. This prevents the server from crashing on startup if
-    the database URL is wrong or if it's an IPv6 timeout.
-    """
+    """Yields a database session, with retry for Postgres cold starts."""
     db = SessionLocal()
-    
+
     if DB_URL.startswith("sqlite"):
         try:
             yield db
@@ -56,10 +61,9 @@ def get_db():
             db.close()
         return
 
-    # Retry loop for external databases (Postgres)
+    # Retry loop for external Postgres (handles Supabase cold starts)
     max_retries = 3
     retry_delay = 5
-
     for attempt in range(max_retries):
         try:
             db.execute(text("SELECT 1"))
@@ -67,13 +71,13 @@ def get_db():
             return
         except Exception as e:
             if attempt < max_retries - 1:
-                logger.warning(f"Database connection failed (attempt {attempt + 1}/{max_retries}). Retrying... ({e})")
+                logger.warning(f"DB connection failed (attempt {attempt + 1}/{max_retries}). Retrying in {retry_delay}s...")
                 time.sleep(retry_delay)
             else:
-                logger.error(f"FATAL: Cannot connect to Supabase. Please check your DATABASE_URL in Render. Error: {e}")
+                logger.error(f"Cannot connect to database: {e}")
                 raise HTTPException(
                     status_code=503,
-                    detail="Database connection failed. Please check the server logs."
+                    detail="Database connection failed. Please try again in a moment."
                 )
         finally:
             try:
