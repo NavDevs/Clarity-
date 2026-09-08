@@ -108,6 +108,20 @@ async def root():
         return FileResponse(str(index))
     return {"status": "API running. Frontend not built yet."}
 
+@app.get("/api/health")
+async def health_check(db: Session = Depends(get_db)):
+    """
+    Lightweight health check endpoint.
+    Called by UptimeRobot every 5 minutes to keep both Render
+    and Supabase permanently awake — completely free.
+    """
+    try:
+        from sqlalchemy import text
+        db.execute(text("SELECT 1"))
+        return {"status": "ok", "database": "connected"}
+    except Exception as e:
+        return {"status": "ok", "database": "unavailable", "error": str(e)}
+
 
 
 @app.post("/api/auth/register")
