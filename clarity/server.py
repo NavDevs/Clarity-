@@ -118,7 +118,8 @@ async def health_check(db: Session = Depends(get_db)):
     try:
         from sqlalchemy import text
         db.execute(text("SELECT 1"))
-        return {"status": "ok", "database": "connected"}
+        dialect = db.bind.dialect.name
+        return {"status": "ok", "database": "connected", "dialect": dialect}
     except Exception as e:
         return {"status": "ok", "database": "unavailable", "error": str(e)}
 
