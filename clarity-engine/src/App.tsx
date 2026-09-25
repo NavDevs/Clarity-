@@ -21,6 +21,7 @@ import { ArchitectureMapView } from './components/ArchitectureMapView';
 import { SecurityAuditView } from './components/SecurityAuditView';
 import { TechStackView } from './components/TechStackView';
 import { AiChatView } from './components/AiChatView';
+import { SettingsView } from './components/SettingsView';
 
 import { NewScanModal } from './components/NewScanModal';
 import { DocsModal } from './components/DocsModal';
