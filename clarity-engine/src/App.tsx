@@ -368,7 +368,7 @@ export default function App() {
             onNavigate={(v) => {
               if (v === 'settings') {
                 setPreviousView(currentView); // remember where we are
-                setSettingsOpen(true);
+                setCurrentView('settings');
               }
               else if (v === 'docs') setDocsOpen(true);
               else setCurrentView(v as ViewMode);
