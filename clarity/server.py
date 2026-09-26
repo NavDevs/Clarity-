@@ -123,6 +123,17 @@ async def health_check(db: Session = Depends(get_db)):
     except Exception as e:
         return {"status": "ok", "database": "unavailable", "error": str(e)}
 
+@app.get("/api/debug/db")
+async def debug_db():
+    raw_url = os.environ.get("DATABASE_URL", "missing")
+    from clarity.database import DB_URL
+    return {
+        "raw_env": raw_url[:15] + "..." if len(raw_url) > 15 else raw_url,
+        "raw_len": len(raw_url),
+        "actual_db_url": DB_URL[:15] + "..." if len(DB_URL) > 15 else DB_URL,
+        "is_sqlite": "sqlite" in DB_URL
+    }
+
 
 
 @app.post("/api/auth/register")
