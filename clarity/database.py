@@ -9,46 +9,53 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 logger = logging.getLogger("clarity.database")
 
 
-def _init_engine(url: str):
-    if not url:
-        url = "sqlite:///./clarity.db"
+def _build_url(url: str) -> str:
+    """Normalise and clean the database URL string."""
+    url = url.strip().strip('"').strip("'")
+    # Heroku-style postgres:// → postgresql://
     if url.startswith("postgres://"):
         url = url.replace("postgres://", "postgresql://", 1)
-    # Strip surrounding quotes if user accidentally added them in Render
-    url = url.strip().strip('"').strip("'")
-    # Remove pgbouncer=true — this is a Prisma-only param, not valid for SQLAlchemy
+    # Remove pgbouncer=true — Prisma-only param, not valid for SQLAlchemy
     url = url.replace("?pgbouncer=true", "").replace("&pgbouncer=true", "")
+    return url
+
+
+def _init_engine(url: str):
+    """Create the SQLAlchemy engine — never catches connection errors here."""
+    if not url or url == "sqlite:///./clarity.db":
+        logger.warning("No DATABASE_URL set — using temporary SQLite. History WILL be lost on restart!")
+        return create_engine(
+            "sqlite:///./clarity.db",
+            connect_args={"check_same_thread": False},
+        ), "sqlite:///./clarity.db"
+
+    url = _build_url(url)
 
     if url.startswith("sqlite"):
-        connect_args = {"check_same_thread": False}
-        return create_engine(url, connect_args=connect_args), url
-    else:
-        connect_args = {"connect_timeout": 15}
-        return create_engine(
-            url,
-            connect_args=connect_args,
-            pool_pre_ping=True,
-            pool_recycle=300,
-            pool_size=5,
-            max_overflow=10,
-            # Required for Supabase transaction-mode pooler (pgbouncer)
-            execution_options={"prepared_statement_cache_size": 0},
-        ), url
+        return create_engine(url, connect_args={"check_same_thread": False}), url
+
+    # Postgres (Neon / Supabase / etc.)
+    logger.info(f"Connecting to Postgres: {url[:30]}...")
+    eng = create_engine(
+        url,
+        connect_args={"connect_timeout": 15},
+        pool_pre_ping=True,
+        pool_recycle=300,
+        pool_size=5,
+        max_overflow=10,
+        execution_options={"prepared_statement_cache_size": 0},
+    )
+    return eng, url
 
 
 # ---------------------------------------------------------------------------
-# Try to create the engine — if DATABASE_URL is malformed, fall back to SQLite
+# Build engine — NOTE: create_engine() itself never raises; only actual
+# connections do. So we do NOT wrap this in try/except, which would hide
+# a bad URL and silently fall back to SQLite.
 # ---------------------------------------------------------------------------
-_raw_url = os.environ.get("DATABASE_URL", "sqlite:///./clarity.db")
+_raw_url = os.environ.get("DATABASE_URL", "")
 
-try:
-    engine, DB_URL = _init_engine(_raw_url)
-    logger.info(f"Database engine created for: {'Postgres (Supabase)' if 'supabase' in _raw_url or 'postgres' in _raw_url.lower() else 'SQLite'}")
-except Exception as e:
-    logger.error(f"DATABASE_URL is invalid and could not be parsed: {e}")
-    logger.warning("Falling back to SQLite — fix your DATABASE_URL in Render environment variables!")
-    DB_URL = "sqlite:///./clarity.db"
-    engine, DB_URL = _init_engine(DB_URL)
+engine, DB_URL = _init_engine(_raw_url)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
@@ -65,7 +72,7 @@ def get_db():
             db.close()
         return
 
-    # Retry loop for external Postgres (handles Supabase cold starts)
+    # Retry loop for external Postgres (handles Neon / Supabase cold starts)
     max_retries = 3
     retry_delay = 5
     for attempt in range(max_retries):
@@ -77,11 +84,12 @@ def get_db():
             if attempt < max_retries - 1:
                 logger.warning(f"DB connection failed (attempt {attempt + 1}/{max_retries}). Retrying in {retry_delay}s...")
                 time.sleep(retry_delay)
+                db = SessionLocal()
             else:
                 logger.error(f"Cannot connect to database: {e}")
                 raise HTTPException(
                     status_code=503,
-                    detail="Database connection failed. Please try again in a moment."
+                    detail="Database connection failed. Please try again in a moment.",
                 )
         finally:
             try:

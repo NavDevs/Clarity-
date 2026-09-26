@@ -125,13 +125,14 @@ async def health_check(db: Session = Depends(get_db)):
 
 @app.get("/api/debug/db")
 async def debug_db():
-    raw_url = os.environ.get("DATABASE_URL", "missing")
-    from clarity.database import DB_URL
+    import clarity.database as _db
+    raw_url = os.environ.get("DATABASE_URL", "NOT SET")
     return {
-        "raw_env": raw_url[:15] + "..." if len(raw_url) > 15 else raw_url,
-        "raw_len": len(raw_url),
-        "actual_db_url": DB_URL[:15] + "..." if len(DB_URL) > 15 else DB_URL,
-        "is_sqlite": "sqlite" in DB_URL
+        "raw_env_prefix": raw_url[:20] + "..." if len(raw_url) > 20 else raw_url,
+        "raw_env_len": len(raw_url),
+        "active_db_url_prefix": _db.DB_URL[:20] + "..." if len(_db.DB_URL) > 20 else _db.DB_URL,
+        "is_sqlite": "sqlite" in _db.DB_URL,
+        "is_postgres": "postgresql" in _db.DB_URL or "postgres" in _db.DB_URL,
     }
 
 
