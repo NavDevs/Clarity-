@@ -28,6 +28,13 @@ except Exception as e:
     import logging
     logging.getLogger("clarity.server").error(f"Error during Base.metadata.create_all: {e}")
 
+# Startup log — check Render logs for this line to confirm Postgres is active
+import logging as _startup_log
+_startup_log.basicConfig(level=_startup_log.INFO)
+_startup_log.getLogger("clarity.startup").info(
+    f"🔌 DATABASE: {'✅ POSTGRES (Neon)' if 'postgresql' in str(engine.url) else '⚠️  SQLITE (history will be lost!)'} | URL: {str(engine.url)[:40]}..."
+)
+
 
 # Import existing logic
 from clarity.explain.fetcher import fetch_repo, cleanup_repo
