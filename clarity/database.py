@@ -17,6 +17,9 @@ def _build_url(url: str) -> str:
         url = url.replace("postgres://", "postgresql://", 1)
     # Remove pgbouncer=true — Prisma-only param, not valid for SQLAlchemy
     url = url.replace("?pgbouncer=true", "").replace("&pgbouncer=true", "")
+    # Force psycopg2 driver — SQLAlchemy 2.x defaults to psycopg (v3) which is not installed
+    if url.startswith("postgresql://"):
+        url = url.replace("postgresql://", "postgresql+psycopg2://", 1)
     return url
 
 
@@ -34,7 +37,7 @@ def _init_engine(url: str):
     if url.startswith("sqlite"):
         return create_engine(url, connect_args={"check_same_thread": False}), url
 
-    # Postgres (Neon / Supabase / etc.)
+    # Postgres (Neon / Supabase / etc.) — URL already has +psycopg2 dialect forced by _build_url
     logger.info(f"Connecting to Postgres: {url[:30]}...")
     eng = create_engine(
         url,
