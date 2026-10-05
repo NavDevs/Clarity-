@@ -41,7 +41,7 @@ def _init_engine(url: str):
     logger.info(f"Connecting to Postgres: {url[:30]}...")
     eng = create_engine(
         url,
-        connect_args={"connect_timeout": 15},
+        connect_args={"connect_timeout": 15, "sslmode": "require"},
         pool_pre_ping=True,
         pool_recycle=300,
         pool_size=5,
