@@ -65,37 +65,63 @@ Base = declarative_base()
 
 
 def get_db():
-    """Yields a database session, with retry for Postgres cold starts."""
+    """Yields a database session, with retry for Postgres cold starts.
+
+    IMPORTANT: the retry loop only wraps the pre-yield connection test.
+    Exceptions thrown *into* the generator by downstream dependencies
+    (e.g. 401 from get_current_user) must propagate untouched — otherwise
+    FastAPI raises "generator didn't stop after throw()" → 500 with no
+    CORS headers (which is exactly the bug seen in Render logs).
+    """
     db = SessionLocal()
 
     if DB_URL.startswith("sqlite"):
         try:
             yield db
         finally:
-            db.close()
-        return
-
-    # Retry loop for external Postgres (handles Neon / Supabase cold starts)
-    max_retries = 3
-    retry_delay = 5
-    for attempt in range(max_retries):
-        try:
-            db.execute(text("SELECT 1"))
-            yield db
-            return
-        except Exception as e:
-            if attempt < max_retries - 1:
-                logger.warning(f"DB connection failed (attempt {attempt + 1}/{max_retries}). Retrying in {retry_delay}s...")
-                time.sleep(retry_delay)
-                db = SessionLocal()
-            else:
-                logger.error(f"Cannot connect to database: {e}")
-                raise HTTPException(
-                    status_code=503,
-                    detail="Database connection failed. Please try again in a moment.",
-                )
-        finally:
             try:
                 db.close()
             except Exception:
                 pass
+        return
+
+    # Pre-yield connection check with retries (Neon / Supabase cold starts).
+    # This block never contains the `yield`, so downstream HTTPExceptions
+    # can never be mistaken for DB connection failures.
+    max_retries = 3
+    retry_delay = 5
+    last_exc: Exception | None = None
+    for attempt in range(max_retries):
+        try:
+            db.execute(text("SELECT 1"))
+            last_exc = None
+            break
+        except Exception as e:
+            last_exc = e
+            if attempt < max_retries - 1:
+                logger.warning(f"DB connection failed (attempt {attempt + 1}/{max_retries}). Retrying in {retry_delay}s...")
+                time.sleep(retry_delay)
+                try:
+                    db.close()
+                except Exception:
+                    pass
+                db = SessionLocal()
+            else:
+                logger.error(f"Cannot connect to database: {e}")
+                try:
+                    db.close()
+                except Exception:
+                    pass
+                raise HTTPException(
+                    status_code=503,
+                    detail="Database connection failed. Please try again in a moment.",
+                )
+
+    # Yield outside any except-Exception block so 401s etc. propagate cleanly.
+    try:
+        yield db
+    finally:
+        try:
+            db.close()
+        except Exception:
+            pass
