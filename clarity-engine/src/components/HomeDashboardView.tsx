@@ -58,10 +58,29 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
   historyRefreshKey = 0
 }) => {
   const [inputUrl, setInputUrl] = useState('');
-  const [history, setHistory] = useState<any[]>([]);
-  const [loadingHistory, setLoadingHistory] = useState(true);
+  const cacheKey = `clarity_history_${username}`;
+  const [history, setHistory] = useState<any[]>(() => {
+    try {
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch {}
+    return [];
+  });
+  // If we have cached rows, skip the full-screen skeleton and revalidate silently.
+  const [loadingHistory, setLoadingHistory] = useState(() => {
+    try {
+      const cached = localStorage.getItem(cacheKey);
+      if (cached && JSON.parse(cached)?.length) return false;
+    } catch {}
+    return true;
+  });
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [deletingIds, setDeletingIds] = useState<string[]>([]);
+  const [loadingDetailId, setLoadingDetailId] = useState<string | null>(null);
+  const [isRevalidating, setIsRevalidating] = useState(false);
 
   // Derived Stats
   const totalScans = history.length;
@@ -88,25 +107,41 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
     }
 
     if (!isRetry) {
-      setLoadingHistory(true);
+      // Stale-while-revalidate: cached rows stay visible; only show the
+      // skeleton when there is nothing cached at all.
+      if (history.length === 0) {
+        setLoadingHistory(true);
+      } else {
+        setIsRevalidating(true);
+      }
       setHistoryError(null);
       retryCountRef.current = 0;
     }
 
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+
     try {
-      const response = await fetch(`${API_BASE}/api/history`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+      const response = await fetch(`${API_BASE}/api/history?limit=20`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+        signal: controller.signal,
       });
 
       if (response.ok) {
         const data = await response.json();
+        clearTimeout(timeout);
         setHistory(data);
+        try { localStorage.setItem(cacheKey, JSON.stringify(data)); } catch {}
         setLoadingHistory(false);
+        setIsRevalidating(false);
         retryCountRef.current = 0;
         return;
       }
 
+      clearTimeout(timeout);
+
       if (response.status === 401 && onLogout) {
+        setIsRevalidating(false);
         onLogout();
         return;
       }
@@ -118,21 +153,27 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
           retryRef.current = setTimeout(() => fetchHistory(true), 6000);
         } else {
           setLoadingHistory(false);
+          setIsRevalidating(false);
           setHistoryError('Could not connect. Please refresh the page.');
         }
         return;
       }
 
       setLoadingHistory(false);
-      setHistoryError('Could not load history. Please refresh.');
+      setIsRevalidating(false);
+      // Keep stale cached rows visible if we have them; only surface the
+      // error when there is nothing to show.
+      setHistoryError((prev) => (history.length > 0 ? prev : 'Could not load history. Please refresh.'));
     } catch {
-      // Network error = server is cold starting. Retry silently.
+      clearTimeout(timeout);
+      // Network error / abort = server is cold starting. Retry silently.
       retryCountRef.current += 1;
       if (retryCountRef.current <= 15) {
         retryRef.current = setTimeout(() => fetchHistory(true), 6000);
       } else {
         setLoadingHistory(false);
-        setHistoryError('Server took too long to respond. Please refresh the page.');
+        setIsRevalidating(false);
+        setHistoryError((prev) => (history.length > 0 ? prev : 'Server took too long to respond. Please refresh the page.'));
       }
     }
   };
@@ -150,8 +191,32 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
     }
   };
 
-  const handleLoadScan = (scan: any) => {
-    onLoadHistory(scan);
+  const handleLoadScan = async (scan: any) => {
+    // Slim list rows carry no scan_data — fetch the full payload on demand.
+    if (scan.scan_data) {
+      onLoadHistory(scan);
+      return;
+    }
+    if (loadingDetailId) return;
+    setLoadingDetailId(String(scan.id));
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+    try {
+      const res = await fetch(`${API_BASE}/api/history/${scan.id}`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
+      if (res.ok) {
+        const full = await res.json();
+        onLoadHistory(full);
+      }
+    } catch (err) {
+      console.error("Failed to load scan detail", err);
+    } finally {
+      clearTimeout(timeout);
+      setLoadingDetailId(null);
+    }
   };
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
@@ -166,7 +231,11 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
         }
       });
       if (res.ok) {
-        setHistory(prev => prev.filter(s => s.id !== id));
+        setHistory(prev => {
+          const next = prev.filter(s => s.id !== id);
+          try { localStorage.setItem(cacheKey, JSON.stringify(next)); } catch {}
+          return next;
+        });
       }
     } catch (err) {
       console.error("Failed to delete scan", err);
@@ -261,7 +330,7 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
         {/* Scan History */}
         <div>
           <label className="block font-mono text-xs font-semibold text-[var(--color-muted-foreground)] uppercase tracking-[0.1em] mb-6">
-            Recent Scans
+            Recent Scans{isRevalidating && !loadingHistory ? ' · updating…' : ''}
           </label>
           
           {loadingHistory ? (
@@ -269,12 +338,12 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
           ) : historyError ? (
             <div className="p-8 border border-red-500/30 border-dashed text-center">
               <p className="text-red-400 font-mono text-xs mb-3">Error loading history: {historyError}</p>
-              <button onClick={fetchHistory} className="font-mono text-xs text-[var(--color-accent)] underline">Retry</button>
+              <button onClick={() => fetchHistory()} className="font-mono text-xs text-[var(--color-accent)] underline">Retry</button>
             </div>
           ) : history.length === 0 ? (
             <div className="p-8 border border-[var(--color-border)] border-dashed text-center">
               <p className="text-[var(--color-muted-foreground)] font-mono text-sm">No recent scans found.</p>
-              <button onClick={fetchHistory} className="mt-2 font-mono text-xs text-[var(--color-muted-foreground)] underline">Refresh</button>
+              <button onClick={() => fetchHistory()} className="mt-2 font-mono text-xs text-[var(--color-muted-foreground)] underline">Refresh</button>
             </div>
           ) : (
             <motion.div 
@@ -284,6 +353,7 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
               <AnimatePresence mode="popLayout">
                 {history.map((scan) => {
                   const isDeleting = deletingIds.includes(scan.id);
+                  const isLoadingDetail = loadingDetailId === String(scan.id);
                   return (
                     <motion.div 
                       key={scan.id}
@@ -301,11 +371,15 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
                         opacity: { duration: 0.25 },
                         scale: { duration: 0.25 }
                       }}
-                      onClick={() => !isDeleting && handleLoadScan(scan)}
-                      className={`bg-[var(--color-card)] border border-[var(--color-border)] p-4 sm:p-6 hover:border-[var(--color-accent)] cursor-pointer transition-colors duration-200 group flex flex-col relative ${isDeleting ? 'pointer-events-none' : ''}`}
+                      onClick={() => !isDeleting && !isLoadingDetail && handleLoadScan(scan)}
+                      className={`bg-[var(--color-card)] border border-[var(--color-border)] p-4 sm:p-6 hover:border-[var(--color-accent)] cursor-pointer transition-colors duration-200 group flex flex-col relative ${(isDeleting || isLoadingDetail) ? 'pointer-events-none' : ''}`}
                     >
                       <div className="flex justify-between items-start mb-4">
-                        <span className="material-symbols-outlined text-[var(--color-muted-foreground)] group-hover:text-[var(--color-accent)] transition-colors">folder</span>
+                        {isLoadingDetail ? (
+                          <span className="material-symbols-outlined text-[var(--color-accent)] animate-spin">sync</span>
+                        ) : (
+                          <span className="material-symbols-outlined text-[var(--color-muted-foreground)] group-hover:text-[var(--color-accent)] transition-colors">folder</span>
+                        )}
                         <div className="flex items-center gap-3">
                           <span className="text-[10px] font-mono text-[var(--color-muted-foreground)]">
                             {new Date(scan.created_at).toLocaleDateString()}

@@ -46,8 +46,12 @@ from clarity.explain.diagram_gen import generate_diagram_data
 from clarity.audit.checker import check_env_vars
 from clarity.audit.scanner import scan_directory
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
+from fastapi import Response
 
 app = FastAPI(title="Clarity Dashboard API")
+
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 app.add_middleware(
     CORSMiddleware,
@@ -215,9 +219,43 @@ def update_password(req: UpdatePasswordRequest, db: Session = Depends(get_db), c
     return {"status": "success"}
 
 @app.get("/api/history")
-def get_history(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    history = db.query(ScanHistory).filter(ScanHistory.user_id == current_user.id).order_by(ScanHistory.created_at.desc()).all()
-    return [{"id": h.id, "repo_url": h.repo_url, "repo_name": h.repo_name, "scan_data": json.loads(h.scan_data), "created_at": h.created_at} for h in history]
+def get_history(
+    response: Response,
+    limit: int = 20,
+    offset: int = 0,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Slim list — metadata only (no scan_data blob).
+
+    The dashboard grid only renders repo_name / repo_url / created_at, so
+    the full scan payload (often 100KB–MBs per row) is NOT included here.
+    Fetch one full scan via GET /api/history/{scan_id} on card click.
+    """
+    limit = max(1, min(limit, 50))
+    offset = max(0, offset)
+    rows = (
+        db.query(ScanHistory)
+        .filter(ScanHistory.user_id == current_user.id)
+        .order_by(ScanHistory.created_at.desc())
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
+    # Short private cache — per-user data, but revalidation is cheap now.
+    response.headers["Cache-Control"] = "private, max-age=15"
+    return [
+        {"id": h.id, "repo_url": h.repo_url, "repo_name": h.repo_name, "created_at": h.created_at}
+        for h in rows
+    ]
+
+@app.get("/api/history/{scan_id}")
+def get_history_detail(scan_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Full scan payload for a single history item (on-demand)."""
+    h = db.query(ScanHistory).filter(ScanHistory.id == scan_id, ScanHistory.user_id == current_user.id).first()
+    if not h:
+        raise HTTPException(status_code=404, detail="Scan not found")
+    return {"id": h.id, "repo_url": h.repo_url, "repo_name": h.repo_name, "scan_data": json.loads(h.scan_data), "created_at": h.created_at}
 
 @app.post("/api/analyze")
 async def analyze_repo(req: AnalyzeRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_optional)):
