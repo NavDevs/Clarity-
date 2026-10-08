@@ -119,7 +119,8 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
     }
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10000);
+    // Allow up to 60 seconds for cold start
+    const timeout = setTimeout(() => controller.abort(), 60000);
 
     try {
       const response = await fetch(`${API_BASE}/api/history?limit=20`, {
@@ -146,10 +147,10 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
         return;
       }
 
-      // 503 = server waking up. Retry silently, keep showing "Loading history..."
+      // 503 = server waking up. Retry silently.
       if (response.status === 503) {
         retryCountRef.current += 1;
-        if (retryCountRef.current <= 15) {
+        if (retryCountRef.current <= 5) {
           retryRef.current = setTimeout(() => fetchHistory(true), 6000);
         } else {
           setLoadingHistory(false);
@@ -161,14 +162,12 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
 
       setLoadingHistory(false);
       setIsRevalidating(false);
-      // Keep stale cached rows visible if we have them; only surface the
-      // error when there is nothing to show.
       setHistoryError((prev) => (history.length > 0 ? prev : 'Could not load history. Please refresh.'));
-    } catch {
+    } catch (err: any) {
       clearTimeout(timeout);
       // Network error / abort = server is cold starting. Retry silently.
       retryCountRef.current += 1;
-      if (retryCountRef.current <= 15) {
+      if (retryCountRef.current <= 5) {
         retryRef.current = setTimeout(() => fetchHistory(true), 6000);
       } else {
         setLoadingHistory(false);
@@ -199,19 +198,31 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
     }
     if (loadingDetailId) return;
     setLoadingDetailId(String(scan.id));
+    
+    // Render free tier takes ~50s to wake up from sleep. 
+    // We must give it at least 60 seconds before aborting!
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15000);
+    const timeout = setTimeout(() => controller.abort(), 65000); 
+    
     try {
       const res = await fetch(`${API_BASE}/api/history/${scan.id}`, {
         headers: { 'Authorization': `Bearer ${token}` },
         signal: controller.signal,
       });
       clearTimeout(timeout);
+      
       if (res.ok) {
         const full = await res.json();
         onLoadHistory(full);
+      } else if (res.status === 404) {
+        alert("This scan was not found. It may have been deleted.");
+      } else {
+        alert("Failed to load scan. Please try again.");
       }
-    } catch (err) {
+    } catch (err: any) {
+      if (err.name === 'AbortError') {
+        alert("Server took too long to wake up. Please try again.");
+      }
       console.error("Failed to load scan detail", err);
     } finally {
       clearTimeout(timeout);
@@ -219,8 +230,9 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
     }
   };
 
-  const handleDelete = async (e: React.MouseEvent, id: string) => {
+  const handleDelete = async (e: React.MouseEvent, rawId: any) => {
     e.stopPropagation();
+    const id = String(rawId);
     if (deletingIds.includes(id)) return;
     setDeletingIds(prev => [...prev, id]);
     try {
@@ -232,7 +244,7 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
       });
       if (res.ok) {
         setHistory(prev => {
-          const next = prev.filter(s => s.id !== id);
+          const next = prev.filter(s => String(s.id) !== id);
           try { localStorage.setItem(cacheKey, JSON.stringify(next)); } catch {}
           return next;
         });
@@ -352,7 +364,7 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
             >
               <AnimatePresence mode="popLayout">
                 {history.map((scan) => {
-                  const isDeleting = deletingIds.includes(scan.id);
+                  const isDeleting = deletingIds.includes(String(scan.id));
                   const isLoadingDetail = loadingDetailId === String(scan.id);
                   return (
                     <motion.div 
